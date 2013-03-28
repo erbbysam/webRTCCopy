@@ -1,0 +1,101 @@
+<html>
+  <head>
+    <title>WebRTC Copy</title>
+    <link type="text/css" href="/t2/site/style.css" rel="stylesheet"></link>
+    <link type="text/css" href="/t2/site/colorbox.css" rel="stylesheet"></link>
+
+    <script src="/t2/site/ext-js/jquery.js"></script>
+    <script src="/t2/site/ext-js/jquery.colorbox-min.js"></script>
+	<script src="/t2/site/ext-js/base64-arraybuffer.js"></script>
+    <script src="/t2/site/js/webrtc-data.io.js"></script>
+  </head>
+  <body>
+	
+	<div style="display:none">
+		<div id="roomprompt" >
+			<div class="buttonBox">
+				<div id="splash_header">WebRTC Copy</div>
+				WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
+				This website allows files and messages to be transmitted over this protocol.<br /><br />
+				To get started create a new room and connect with other computers:<br />
+				<div id="newRoom" class="button">Create A New Room</div><br /><br />
+				If you have a room name, enter it here to join:<br />
+				<input id="existing" type="text" />
+			</div>
+		</div>
+	</div>
+	
+	<div style="display:none">
+		<div id="userprompt">
+			<div id="username_header">WebRTC Copy</div>
+			Please enter a username:
+			<input id="username" type="text" /><br /><br />
+			<div id="username_warning_header">If you have not been to this website before:</div>
+			This website allows files and messages to be transmitted directly between web browsers.<br />
+			If you did not create a new room, you were likely sent this link.<br />
+			<br />
+			If you were sent this link and you do not trust the source of this link <b>leave this site now</b>.<br />
+			To leave: <a href="http://www.rtccopy.com">Create a new rtccopy.com room</a> or <a href="http://www.google.com">Run away!</a>
+		</div>
+	</div>
+	
+	<div id="chat_display" style="display:none;">
+	
+		<div id="howthisworks">
+			<div id="howthisworks_header">WebRTC Copy</div>
+			WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
+			This website allows files and messages to be transmitted over this protocol.<br />
+			<table id="warning"><tbody><tr>
+				<td>Warning:<br />-Data is transmitted here without encryption, directly to the other users in this WebRTC room. Use caution if sending sensitive files and communicate file passwords through a more secure channel.<br />
+									-Your browser will likely crash if you attempt to send a single file larger than 100MB, your mileage will vary.</td>
+				<td><table id="colors"><tbody>
+					<tr><td id="good">Good: <a href="http://www.truecrypt.org/" target="_blank">TrueCrypt</a></td></tr>
+					<tr><td id="yellow">Pretty Good: <a href="http://www.7-zip.org/" target="_blank">encrypted .zip</a></td></tr>
+					<tr><td id="bad">Dangerous: finances.xls in a coffee shop</td></tr>
+				</tbody></table></td>		
+			</tr></tbody></table>
+		</div>
+		
+		<div id="filelist">
+			<span id="filelist_header">File List:</span></br >
+			<input type="checkbox" id="auto_download"><span class="small">Automatic download
+			<span id="filelist_cointainer"></span>
+		</div>
+		
+		<div id="chatbox">
+		  <div id="roomname"></div>
+		  <div id="messages">
+		  </div>
+		  <input id="chatinput" style="display:none;" type="text" placeholder="Message:"/>
+		  <div id="pleasewait">
+			Please wait a few seconds to connect over webrtc.
+		  </div>
+		</div>
+		
+		<span id="question">
+			<a href="javascript:void(0);" onclick="javascript:show_question();">?</a>
+		</span>
+		
+		<div style="display:none">
+			<div id="show_question">
+				<a href="https://github.com/erbbysam/webRTCCopy" target="_blank"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+				WebRTC Copy<br />
+				&#169; 2013 Samuel Erb<br />
+				<br />
+				(<a href="http://www.erbbysam.com/" target="_blank">website</a>)<br />
+				(<a href="https://twitter.com/erbbysam" target="_blank">twitter</a>)<br />
+				(<a href="https://github.com/erbbysam" target="_blank">github</a>)<br />
+				<br />
+				<br />
+				This is based on the <a href="https://github.com/erbbysam/webrtc-data.io" target="_blank">webrtc-data.io</a> library developed for this site forked from <a href="https://github.com/webRTC/webRTC.io" target="_blank">webRTC.io</a>.
+
+			</div>
+		</div>
+
+
+	</div>
+    
+    <script src="/t2/site/js/script.js"></script>
+    <script src="/t2/site/js/file-io.js"></script>
+  </body>
+</html>
