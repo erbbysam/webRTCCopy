@@ -1,13 +1,13 @@
 <html>
   <head>
     <title>WebRTC Copy</title>
-    <link type="text/css" href="/t2/site/style.css" rel="stylesheet"></link>
-    <link type="text/css" href="/t2/site/colorbox.css" rel="stylesheet"></link>
+    <link type="text/css" href="style.css" rel="stylesheet"></link>
+    <link type="text/css" href="colorbox.css" rel="stylesheet"></link>
 
-    <script src="/t2/site/ext-js/jquery.js"></script>
-    <script src="/t2/site/ext-js/jquery.colorbox-min.js"></script>
-	<script src="/t2/site/ext-js/base64-arraybuffer.js"></script>
-    <script src="/t2/site/js/webrtc-data.io.js"></script>
+    <script src="ext-js/jquery.js"></script>
+    <script src="ext-js/jquery.colorbox-min.js"></script>
+	<script src="ext-js/base64-arraybuffer.js"></script>
+    <script src="js/webrtc-data.io.js"></script>
   </head>
   <body>
 	
@@ -20,7 +20,9 @@
 				To get started create a new room and connect with other computers:<br />
 				<div id="newRoom" class="button">Create A New Room</div><br /><br />
 				If you have a room name, enter it here to join:<br />
-				<input id="existing" type="text" />
+				<input id="existing" type="text" /><br />
+				<br />
+				<span style="color:rgb(179, 47, 47);">Notice: only Google Chrome is currently supported.</span>
 			</div>
 		</div>
 	</div>
@@ -45,6 +47,7 @@
 			<div id="howthisworks_header">WebRTC Copy</div>
 			WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
 			This website allows files and messages to be transmitted over this protocol.<br />
+			Send others the link above to allow them to join this room.<br />
 			<table id="warning"><tbody><tr>
 				<td>Warning:<br />-Data is transmitted here without encryption, directly to the other users in this WebRTC room. Use caution if sending sensitive files and communicate file passwords through a more secure channel.<br />
 									-Your browser will likely crash if you attempt to send a single file larger than 100MB, your mileage will vary.</td>
@@ -95,7 +98,20 @@
 
 	</div>
     
-    <script src="/t2/site/js/script.js"></script>
-    <script src="/t2/site/js/file-io.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/file-io.js"></script>
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'YOUR CODE HERE']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
   </body>
 </html>
