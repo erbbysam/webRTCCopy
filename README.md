@@ -7,7 +7,7 @@ Tested in working in Chrome Canary & Chrome stable
 Copy client directory to web server public directory (ie. /var/www/)
 
 The server itself is identical to the one found in [webrtc.io-demo] (https://github.com/webRTC/webrtc.io-demo), however, the webrtc.io library was modified to support usernames.
-Therefore, it is probably best to follow the instalation directions on [webrtc.io-demo] (https://github.com/webRTC/webrtc.io-demo) and replace the webrtc.io server file used as I do not know enough about node.js to garuntee any directions I provided will result in a functioning server.
+Therefore, it is probably best to follow the instalation directions on [webrtc.io-demo] (https://github.com/webRTC/webrtc.io-demo) and replace the webrtc.io server file(with the [webrtc-data.io] (https://github.com/erbbysam/webRTC-data.io) one included in that folder) as I do not know enough about node.js to garuntee any directions I provided will result in a functioning server.
 To start the server:
 ```
 node server.js
