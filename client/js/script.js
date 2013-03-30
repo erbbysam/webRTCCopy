@@ -12,6 +12,10 @@ var username = "";
 /* intro function */
 initRTCCopy();
 
+function display_error() {
+	alert('Your browser is not supported. Please use Chrome & verify that it is up-to-date (menu->"About Google Chrome").');
+}
+
 /* intro function */
 function initRTCCopy() {
 
@@ -98,12 +102,20 @@ var dataChannelChat = {
 	broadcast: function(message) {
 		for(var connection in rtc.dataChannels) {
 			var channel = rtc.dataChannels[connection];
-			channel.send(message);
+			if (channel.send) {
+				channel.send(message);
+			} else {
+				console.log("unable to send message to " + connection);
+			}
 		}
 	},
 	send: function(connection, message) {
 		var channel = rtc.dataChannels[connection];
-		channel.send(message);
+		if (channel.send) {
+			channel.send(message);
+		} else {
+			console.log("unable to send message to " + connection);
+		}
 	},
 	recv: function(channel, message) {
 		return JSON.parse(message).data;
@@ -117,7 +129,7 @@ var dataChannelChat = {
 function init() {
 
   if(!PeerConnection) {
-    alert('Your browser is not supported or you have to turn on flags. In chrome you go to chrome://flags and turn on Enable PeerConnection remember to restart chrome');
+	display_error();
   }
   
   /* the room # is taken from the url */
@@ -178,7 +190,7 @@ function initChat() {
     console.log('initializing data channel chat');
     chat = dataChannelChat;
   } else {
-    alert("non-WebRTC data channel not supported, sorry.");
+    display_error();
   }
   
   var input = document.getElementById("chatinput");
