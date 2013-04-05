@@ -52,6 +52,8 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
 
   // Array of known peer socket ids
   rtc.connections = [];
+  // Array that says if this connect is OK to send data over, otherwise an error will likely occur
+  rtc.connection_ok_to_send = [];
   // Array of usernames, indexed by socket id
   rtc.usernames = [];
   // Stream-related variables.
@@ -144,6 +146,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
       });
 
       rtc.on('remove_peer_connected', function(data) {
+	    rtc.connection_ok_to_send[id] = false;
         rtc.fire('disconnect stream', data.socketId, rtc.usernames[data.socketId]);
         delete rtc.usernames[data.socketId];
         delete rtc.peerConnections[data.socketId];
@@ -334,6 +337,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
 
     channel.onopen = function() {
       console.log('data stream open ' + id);
+	  rtc.connection_ok_to_send[id] = true;
       rtc.fire('data stream open', id, rtc.usernames[id]);
     };
 

@@ -102,7 +102,7 @@ var dataChannelChat = {
 	broadcast: function(message) {
 		for(var connection in rtc.dataChannels) {
 			var channel = rtc.dataChannels[connection];
-			if (channel.send) {
+			if (rtc.connection_ok_to_send[connection]) {
 				channel.send(message);
 			} else {
 				console.log("unable to send message to " + connection);
@@ -111,7 +111,7 @@ var dataChannelChat = {
 	},
 	send: function(connection, message) {
 		var channel = rtc.dataChannels[connection];
-		if (channel.send) {
+		if (rtc.connection_ok_to_send[connection]) {
 			channel.send(message);
 		} else {
 			console.log("unable to send message to " + connection);
