@@ -1,11 +1,20 @@
 //CLIENT
 //(c) 2013 Samuel Erb
  
- // Fallbacks for vendor-specific variables until the spec is finalized.
+// Fallbacks for vendor-specific variables until the spec is finalized.
+var is_chrome = window.chrome;
 
-var PeerConnection = window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
-var URL = window.URL || window.webkitURL || window.msURL || window.oURL;
-var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+if (is_chrome) {
+	var PeerConnection =  window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
+} else {
+	var PeerConnection = mozRTCPeerConnection;
+}
+if (is_chrome) {
+	var SessionDescription = RTCSessionDescription;
+} else {
+	var SessionDescription = mozRTCSessionDescription;
+}
+
 
 (function() {
 
@@ -72,7 +81,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
     try {
       // raises exception if createDataChannel is not supported
       var pc = new PeerConnection(rtc.SERVER, rtc.dataChannelConfig);
-      channel = pc.createDataChannel('supportCheck', {reliable: false}); /*reliable = true hopefully soon! */
+      channel = pc.createDataChannel('supportCheck', {reliable: false}); 
       channel.close();
       return true;
     } catch(e) {
@@ -228,7 +237,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
     return pc;
   };
   
-  /* SUPER HACK!
+  /* SUPER HACK! (for chrome)
    * https://github.com/Peer5/ShareFest/blob/master/public/js/peerConnectionImplChrome.js#L201
    * https://github.com/Peer5/ShareFest/issues/10
    * This is a wicked impressive hack, lovingly taken from ShareFest
@@ -244,7 +253,9 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
   rtc.sendOffer = function(socketId) {
     var pc = rtc.peerConnections[socketId];
     pc.createOffer( function(session_description) {
-    session_description.sdp = rtc.transformOutgoingSdp(session_description.sdp);
+	if (is_chrome) {
+		session_description.sdp = rtc.transformOutgoingSdp(session_description.sdp);
+	}
     pc.setLocalDescription(session_description);
     rtc._socket.send(JSON.stringify({
         "eventName": "send_offer",
@@ -259,7 +270,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
 
   rtc.receiveOffer = function(socketId, sdp) {
     var pc = rtc.peerConnections[socketId];
-    pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    pc.setRemoteDescription(new SessionDescription(sdp));
     rtc.sendAnswer(socketId);
   };
 
@@ -267,7 +278,9 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
   rtc.sendAnswer = function(socketId) {
     var pc = rtc.peerConnections[socketId];
     pc.createAnswer( function(session_description) {
-    session_description.sdp = rtc.transformOutgoingSdp(session_description.sdp);
+	if (is_chrome) {
+		session_description.sdp = rtc.transformOutgoingSdp(session_description.sdp);
+	}
     pc.setLocalDescription(session_description);
     rtc._socket.send(JSON.stringify({
         "eventName": "send_answer",
@@ -283,7 +296,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
 
   rtc.receiveAnswer = function(socketId, sdp) {
     var pc = rtc.peerConnections[socketId];
-    pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    pc.setRemoteDescription(new SessionDescription(sdp));
   };
 
   rtc.addStreams = function() {
@@ -296,7 +309,7 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
   };
 
   rtc.attachStream = function(stream, domId) {
-    document.getElementById(domId).src = URL.createObjectURL(stream);
+    document.getElementById(domId).src = window.URL.createObjectURL(stream);
   };
 
 
@@ -313,15 +326,18 @@ var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || nav
     if (!id)
       throw new Error ('attempt to createDataChannel with unknown id');
 
-    if (!pc || !(pc instanceof PeerConnection))
-      throw new Error ('attempt to createDataChannel without peerConnection');
+    //if (!pc || !(pc instanceof PeerConnection))
+    //  throw new Error ('attempt to createDataChannel without peerConnection');
 
     // need a label
     label = label || 'fileTransfer' || String(id);
 
-    // chrome only supports reliable false atm.
-    options = {reliable: false};
-    
+	if (is_chrome) {
+		options = {reliable: false}; // chrome only supports reliable false :(
+	}else{
+		options = {reliable: true}; //but Firefox supports true!
+    }
+	
     try {
       console.log('createDataChannel ' + id);
       channel = pc.createDataChannel(label, options);

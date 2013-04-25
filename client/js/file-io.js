@@ -19,7 +19,7 @@ this.recieved_timeout = [];
 /* Document bind's to accept files copied. Don't accept until we have a connection */
 function accept_inbound_files() {
 
-	$(document).bind('drop dragover', function (e) {
+	$(document).bind('drop dragover dragenter', function (e) {
 		// todo: CSS signal?
 		e.preventDefault();
 	});
