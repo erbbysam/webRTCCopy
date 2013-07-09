@@ -3,14 +3,16 @@ Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/
 Tested & working in Chrome Canary, Chrome stable & Firefox nightly
 
 ### Install
+(currently hosted on Ubuntu, but any linux server will likely work)
 
 Copy client directory to web server public directory (ie. /var/www/)
 
-The server itself is identical to the one found in [webrtc.io-demo] (https://github.com/webRTC/webrtc.io-demo), however, the webrtc.io library was modified to support usernames.
-Therefore, it is probably best to follow the instalation directions on [webrtc.io-demo] (https://github.com/webRTC/webrtc.io-demo) and replace the webrtc.io server file(with the [webrtc-data.io] (https://github.com/erbbysam/webRTC-data.io) one included in that folder).
+Copy the server directory to a non-public folder (ie. your user folder ~/)
+
 To start the server:
 ```
-node server.js
+npm install ws express
+node ~/server/site/server.js (or use the forever node.js module to keep it running)
 ```
 
 That's it!

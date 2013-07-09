@@ -23,6 +23,9 @@ rtc.sockets = [];
 
 rtc.rooms = {};
 rtc.users = {};
+rtc.encryption = {};
+rtc.browser = {};
+rtc.browserVer = {};
 
 // Holds callbacks for certain events.
 rtc._events = {};
@@ -136,16 +139,28 @@ function attachEvents(manager) {
         return;
     }
 
+	/* this will either create a new room or fetch an existing one... TODO: cleanup */
     var connectionsId = [];
     var usersId = [];
     var roomList = rtc.rooms[data.room] || [];
     var userList = rtc.users[data.room] || {};
-
+	
     roomList.push(socket.id);
     rtc.rooms[data.room] = roomList;
     
+	/* update the username list with this new user's socket */
     userList[socket.id] = data.username;
-    rtc.users[data.room] = userList;
+	rtc.users[data.room] = userList;
+	
+	/* if we don't have a value set yet for encryption, browser & browser version set it */
+	if (!rtc.browser[data.room]) {
+		rtc.encryption[data.room] = data.encryption;
+		rtc.browser[data.room] = data.browser;
+		rtc.browserVer[data.room] = data.browserVer;
+	}
+	
+	
+    
 
     for (var i = 0; i < roomList.length; i++) {
       var id = roomList[i];
@@ -180,6 +195,9 @@ function attachEvents(manager) {
       "data": {
         "connections": connectionsId,
         "usernames": userList,
+		"encryption": rtc.encryption[data.room],
+		"browser": rtc.browser[data.room],
+		"browserVer": rtc.browserVer[data.room],
         "you": socket.id
       }
     }), function(error) {
