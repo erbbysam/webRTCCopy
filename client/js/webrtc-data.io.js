@@ -377,8 +377,7 @@ if (is_chrome) {
 	if (rtc.dataChannelSupport == reliable_false) {
 		options = {reliable: false}; /* we only support reliability false */
 	}else{
-		options = {reliable: false}; /* reliability true!! */ /*TODO - CHANGE BACK */ 
-		console.log('TESTING setting reliable to false!');
+		options = {reliable: true}; /* reliability true!! */
     }
 	
     try {
