@@ -1,18 +1,31 @@
 //CLIENT
 //(c) 2013 Samuel Erb
  
-// Fallbacks for vendor-specific variables until the spec is finalized.
-var is_chrome = window.chrome;
+/* Fallbacks for vendor-specific variables until the spec is finalized.
+ * Going to use jquery.browser to detect major version # (to help compatibiliity
+ * and to allow later versions of chrome to support stateful connections).
+ */
+var is_chrome = $.browser.chrome;
+var browser_name = $.browser.name;
+var browser_ver = $.browser.versionNumber;
+
+var rtc_unsupported = 0;
+var reliable_false  = 1;
+var reliable_true   = 2;
 
 if (is_chrome) {
 	var PeerConnection =  window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
 } else {
-	var PeerConnection = mozRTCPeerConnection;
+	if (browser_name == "firefox") {
+		var PeerConnection = mozRTCPeerConnection;
+	}
 }
 if (is_chrome) {
 	var SessionDescription = RTCSessionDescription;
 } else {
-	var SessionDescription = mozRTCSessionDescription;
+	if (browser_name == "firefox") {
+		var SessionDescription = mozRTCSessionDescription;
+	}
 }
 
 
@@ -76,17 +89,29 @@ if (is_chrome) {
   rtc.dataChannelConfig = {optional: [ {RtpDataChannels: true} ] };
 
 
-  // check whether data channel is supported.
+  /* returns what is supported by trying reliable first, then unreliable */
   rtc.checkDataChannelSupport = function() {
-    try {
-      // raises exception if createDataChannel is not supported
+	
+	try {
+      /* first try reliable */
       var pc = new PeerConnection(rtc.SERVER, rtc.dataChannelConfig);
-      channel = pc.createDataChannel('supportCheck', {reliable: false}); 
+      channel = pc.createDataChannel('supportCheck', {reliable: true}); 
       channel.close();
-      return true;
-    } catch(e) {
-      return false;
-    }
+	  console.log('data channel reliability set to true!');
+      return reliable_true;
+    } catch(e) {	
+		try {
+		  /* then unreliable */
+		  var pc = new PeerConnection(rtc.SERVER, rtc.dataChannelConfig);
+		  channel = pc.createDataChannel('supportCheck', {reliable: false}); 
+		  channel.close();
+		  console.log('data channel reliability set to false!');
+		  return reliable_false;
+		} catch(e) {
+		  /* then fail :( */
+		  return rtc_unsupported;
+		}
+	}
   };
 
   rtc.dataChannelSupport = rtc.checkDataChannelSupport();
@@ -95,7 +120,7 @@ if (is_chrome) {
    * Connects to the websocket server.
    */
   rtc.connect = function(server, room, username) {
-    room = room || ""; // by default, join a room called the blank string
+    room = room || "";
     rtc._socket = new WebSocket(server);
 
     rtc._socket.onopen = function() {
@@ -104,7 +129,10 @@ if (is_chrome) {
         "eventName": "join_room",
         "data":{
           "room": room,
-          "username": username
+          "username": username,
+		  "encryption": "none",
+		  "browser": browser_name,
+		  "browserVer": browser_ver
         }
       }));
 
@@ -125,9 +153,16 @@ if (is_chrome) {
 
       rtc.on('get_peers', function(data) {
         console.log("get_peers");
+		console.log(data);
         rtc.connections = data.connections;
         rtc.usernames = data.usernames;
         rtc._me = data.you;
+		
+		/* Display warning about room we are entering */
+		if (data.browser != browser_name || data.browserVer != browser_ver) {
+			alert("Warning!\nThe room you are entering was started by someone with a different browser. You should always match browsers (for now) and try to match major version number:\nYou: " + browser_name + " " + browser_ver + "\nRoom Creator: " + data.browser + " " + data.browserVer + "\n\nTrying to connect now!");
+		}
+		
         // fire connections event and pass peers
         rtc.fire('connections', rtc.connections);
         // at this point, our connections are ready, fire ready!
@@ -199,9 +234,10 @@ if (is_chrome) {
   rtc.createPeerConnection = function(id) {
     console.log("creating peer conn");
     var config;
-    if (rtc.dataChannelSupport)
+    if (rtc.dataChannelSupport != rtc_unsupported) {
       config = rtc.dataChannelConfig;
-
+	}
+ 
     var pc = rtc.peerConnections[id] = new PeerConnection(rtc.SERVER, config);
     pc.onicecandidate = function(event) {
       if (event.candidate) {
@@ -227,7 +263,7 @@ if (is_chrome) {
       rtc.fire('add remote stream', event.stream, id);
     };
 
-    if (rtc.dataChannelSupport) {
+    if (rtc.dataChannelSupport != rtc_unsupported) {
       pc.ondatachannel = function (evt) {
         console.log('data channel connecting ' + id);
         rtc.addDataChannel(id, evt.channel);
@@ -252,10 +288,13 @@ if (is_chrome) {
 
   rtc.sendOffer = function(socketId) {
     var pc = rtc.peerConnections[socketId];
-    pc.createOffer( function(session_description) {
+    
+	pc.createOffer( function(session_description) {
 	if (is_chrome) {
 		session_description.sdp = rtc.transformOutgoingSdp(session_description.sdp);
 	}
+	
+	//description callback? not currently supported - http://www.w3.org/TR/webrtc/#dom-peerconnection-setlocaldescription
     pc.setLocalDescription(session_description);
     rtc._socket.send(JSON.stringify({
         "eventName": "send_offer",
@@ -264,6 +303,8 @@ if (is_chrome) {
             "sdp": session_description
             }
         }));
+    }, function(e) {
+		console.log('createOffer failed', e);
     });
   };
 
@@ -277,6 +318,7 @@ if (is_chrome) {
 
   rtc.sendAnswer = function(socketId) {
     var pc = rtc.peerConnections[socketId];
+	
     pc.createAnswer( function(session_description) {
 	if (is_chrome) {
 		session_description.sdp = rtc.transformOutgoingSdp(session_description.sdp);
@@ -290,6 +332,8 @@ if (is_chrome) {
             }
         }));
     var offer = pc.remoteDescription;
+    }, function(e) {
+		console.log('createOffer failed', e);
     });
   };
 
@@ -314,7 +358,7 @@ if (is_chrome) {
 
 
   rtc.createDataChannel = function(pcOrId, label) {
-    if (!rtc.dataChannelSupport) {
+    if (rtc.dataChannelSupport == rtc_unsupported) {
       alert('webRTC data channel is not yet supported in this browser,' +
             ' or you must turn on experimental flags');
       return;
@@ -323,19 +367,18 @@ if (is_chrome) {
     id = pcOrId;
     pc = rtc.peerConnections[pcOrId];
 
-    if (!id)
+    if (!id) {
       throw new Error ('attempt to createDataChannel with unknown id');
-
-    //if (!pc || !(pc instanceof PeerConnection))
-    //  throw new Error ('attempt to createDataChannel without peerConnection');
-
+	}
+ 
     // need a label
     label = label || 'fileTransfer' || String(id);
 
-	if (is_chrome) {
-		options = {reliable: false}; // chrome only supports reliable false :(
+	if (rtc.dataChannelSupport == reliable_false) {
+		options = {reliable: false}; /* we only support reliability false */
 	}else{
-		options = {reliable: true}; //but Firefox supports true!
+		options = {reliable: false}; /* reliability true!! */ /*TODO - CHANGE BACK */ 
+		console.log('TESTING setting reliable to false!');
     }
 	
     try {
@@ -381,11 +424,13 @@ if (is_chrome) {
   };
 
   rtc.addDataChannels = function() {
-    if (!rtc.dataChannelSupport)
-      return;
+	if (rtc.dataChannelSupport == rtc_unsupported) {
+		return;
+	}
 
-    for (var connection in rtc.peerConnections)
-      rtc.createDataChannel(connection);
+	for (var connection in rtc.peerConnections) {
+		rtc.createDataChannel(connection);
+	}
   };
 
 

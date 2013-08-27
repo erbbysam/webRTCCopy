@@ -4,7 +4,7 @@
 	(c) 2013 Samuel Erb
 ****************/
 
-var PeerConnection = window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
+//var PeerConnection = window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
 
 /* your username */
 var username = "";
@@ -13,7 +13,13 @@ var username = "";
 initRTCCopy();
 
 function display_error() {
-	alert('Your browser is not supported. Please use Chrome & verify that it is up-to-date (menu->"About Google Chrome").');
+	if ($.browser.name == "chrome") {
+		alert('Your browser is not supported. Please update to the latest version of Chrome to use this site. Recommended: Chrome version 30 or greater.');
+	}else if ($.browser.name == "firefox") {
+		alert('Your browser is not supported. Please update to the latest version of Firefox to use this site.');
+	}else {
+		alert('Your browser is not supported. Please use Chrome or Firefox, sorry :(');
+	}
 }
 
 /* intro function */
@@ -40,11 +46,11 @@ function initRTCCopy() {
 	if (r != 0){
 		/* existing room, show username input */
 		$.colorbox.close(); // hide the colorbox!
-		$.colorbox({onLoad: function() {$('#cboxClose').remove();}, href:"#userprompt", inline:true, open:true, overlayClose:false, escKey:false, transition:'none', width:"640px", height:"300px"});
+		$.colorbox({onLoad: function() {$('#cboxClose').remove();}, href:"#userprompt", inline:true, open:true, overlayClose:false, escKey:false, transition:'none', width:"640px", height:"350px"});
 		//$("#userprompt").show();
 	} else {
 		/* no room number? make a colorbox! */
-		$.colorbox({onLoad: function() {$('#cboxClose').remove();}, href:"#roomprompt", inline:true, open:true, overlayClose:false, escKey:false, transition:'none', width:"640px", height:"300px"});
+		$.colorbox({onLoad: function() {$('#cboxClose').remove();}, href:"#roomprompt", inline:true, open:true, overlayClose:false, escKey:false, transition:'none', width:"640px", height:"350px"});
 	
 		/* allow entering a room number */
 		var existing_input = document.getElementById("existing");
@@ -68,6 +74,22 @@ function initRTCCopy() {
 			$("#chat_display").show();
 		}
 	}, false);
+	
+	/* display & update support messages */
+	if (is_chrome && browser_ver >=30) {
+		$(".support").append('<br />You are using Chrome version 30 or greater, please make sure "Enable SCTP Data Channels" is enabled in chrome://flags/#enable-sctp-data-channels.');
+	}
+	
+	/* let's run a quick check before we begin to make sure we have rtc datachannel support */
+	var rtc_status = rtc.checkDataChannelSupport();
+	if (rtc_status == rtc_unsupported) {
+		display_error();
+	}
+	
+	/* lets now also set our chunk burst rate (100 for reliable connections, 1(default) for non-reliable) */
+	if (rtc_status == reliable_true) {
+		set_chunk_burst(100);
+	}
 }
 
 /* adds to your chat */
@@ -130,15 +152,19 @@ function init() {
 
   if(!PeerConnection) {
 	display_error();
+	return;
   }
   
   /* the room # is taken from the url */
   var room = window.location.hash.slice(1);
   
+  /* Add an entry to the username list at id=0 with your name */
+  create_or_clear_container(0,username);
+  
   if (room != 0) {
 	  
 	  /* the important call */
-	  rtc.connect("ws:rtccopy.com:8000", room, username);
+	  rtc.connect("ws:rtccopy.com:8000", room, username); /* TODO: Make wss */
 
 	  /* fire when ready to init chat & communication! */
 	  rtc.on('ready', function(my_socket, usernames) {
@@ -163,7 +189,11 @@ function init() {
 	  
 	  /* when a new user's data channel is opened and we are offering a file, tell them */
 	  rtc.on('data stream open', function(id, username) {
+	    /* add to usernames list */
+		create_or_clear_container(id, username);
+		/* log a message */
 		systemMessage('now connected to ' + username);
+		/* if we have a file, send it their way */
 		send_meta(id);
 	  });
 	  
@@ -178,7 +208,7 @@ function init() {
 	  
 	  /* add welcome message */
 	  var roomname = document.getElementById('roomname');
-	  roomname.innerHTML = '<span class="small">room</span> ' + room + ' <span class="small">username</span> ' + username + ' <span class="small">&nbsp;&nbsp;&nbsp;&nbsp;Drag files into the browser to upload to other users in this room</i>';
+	  roomname.innerHTML = '<span class="small">room</span> ' + room + ' <span class="small">username</span> ' + username + ' <span class="small">&nbsp;&nbsp;&nbsp;&nbsp;Drag files into the browser to upload to other users in this room or </i>';
   }
 }
 
@@ -186,12 +216,8 @@ function init() {
 function initChat() {
   var chat;
 
-  if(rtc.dataChannelSupport) {
-    console.log('initializing data channel chat');
-    chat = dataChannelChat;
-  } else {
-    display_error();
-  }
+  console.log('initializing data channel chat');
+  chat = dataChannelChat;
   
   var input = document.getElementById("chatinput");
   var room = window.location.hash.slice(1);
