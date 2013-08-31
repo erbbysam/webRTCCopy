@@ -190,7 +190,7 @@ if (is_chrome) {
       });
 
       rtc.on('remove_peer_connected', function(data) {
-	    rtc.connection_ok_to_send[id] = false;
+	    rtc.connection_ok_to_send[data.socketId] = false;
         rtc.fire('disconnect stream', data.socketId, rtc.usernames[data.socketId]);
         delete rtc.usernames[data.socketId];
         delete rtc.peerConnections[data.socketId];
