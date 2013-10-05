@@ -100,7 +100,7 @@ function attachEvents(manager) {
           
           //send disconnect to peers
           for (var j = 0; j < room.length; j++) {
-            console.log(room[j]);
+            //console.log(room[j]);
             var soc = rtc.getSocket(room[j]);
             soc.send(JSON.stringify({
               "eventName": "remove_peer_connected",
@@ -114,10 +114,19 @@ function attachEvents(manager) {
             });
           }
           
-          //also remove from username list
+          // also remove from username list
           var userList = rtc.users[key];
           delete userList[socket.id];
-          
+		  
+		  // if no users in the room, delete room information
+		  if ( room.length == 0) {
+			delete rtc.encryption[key];
+			delete rtc.browser[key];
+			delete rtc.browserVer[key];
+			delete rtc.rooms[key];
+			delete rtc.users[key];
+			//console.log("Room "+key+" is now empty, deleting");
+		  }
           break;
         }
       }
@@ -205,6 +214,35 @@ function attachEvents(manager) {
         console.log(error);
       }
     });
+  });
+
+  // query a room's information (used in preconnection setup)
+  rtc.on('room_info', function(data, socket) {
+    iolog('room_info');
+    var encryption = "";
+    var browser = "";
+    var browserver = "";
+	
+    /* check if this information actually exists */
+    if (rtc.browser[data.room]) {
+        encryption = rtc.encryption[data.room];
+        browser    = rtc.browser[data.room];
+        browserver = rtc.browserVer[data.room];
+    }
+    if (socket) {
+      socket.send(JSON.stringify({
+        "eventName": "receive_room_info",
+        "data": {
+          "encryption": encryption,
+	  "browser":    browser,
+	  "browserVer": browserver
+        }
+      }), function(error) {
+        if (error) {
+          console.log(error);
+        }
+      });
+    }
   });
 
   //Receive ICE candidates and send to the correct socket
