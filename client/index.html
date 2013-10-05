@@ -3,27 +3,45 @@
     <title>WebRTC Copy</title>
     <link type="text/css" href="style.css" rel="stylesheet"></link>
     <link type="text/css" href="colorbox.css" rel="stylesheet"></link>
-
+	
+	<!--               ext-js                -->
+	<!-- jquery -->
     <script src="ext-js/jquery.js"></script>
     <script src="ext-js/jquery.colorbox-min.js"></script>
     <script src="ext-js/jquery.browser.min.js"></script>
 	<script src="ext-js/base64-arraybuffer.js"></script>
+	<script src="ext-js/idb.filesystem.min.js"></script>
+	<!-- OTR -->
+	<script src="ext-js/otr/salsa20.js"></script>
+	<script src="ext-js/otr/bigint.js"></script>
+	<script src="ext-js/otr/crypto.js"></script>
+	<script src="ext-js/otr/eventemitter.js"></script>
+	<script src="ext-js/otr/otr.js"></script>
+	<!-- additional crypto-js -->
+	<script src="ext-js/crypto-js/core.js"></script> 
+	<script src="ext-js/crypto-js/rc4.js"></script> 
+	
+	<!--               js                   -->
+	<script src="js/crypto.js"></script>
     <script src="js/webrtc-data.io.js"></script>
   </head>
-  <body>
+  <!-- image credit - http://lostandtaken.com/blog/2012/10/14/7-white-grunge-textures.html -->
+  <body style="background-image:url(https://i.imgur.com/37C3OI5.jpg);">
 	
 	<div style="display:none">
 		<div id="roomprompt" >
 			<div class="buttonBox">
 				<div id="splash_header">WebRTC Copy</div>
-				WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
-				This website allows files and messages to be transmitted over this protocol.<br /><br />
-				To get started create a new room and connect with other computers:<br />
-				<div id="newRoom" class="button">Create A New Room</div><br /><br />
-				If you have a room name, enter it here to join:<br />
-				<input id="existing" type="text" /><br />
+				<span class="small">WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
+				This website allows files and messages to be transmitted <a href="white_paper.html" target="_blank">securely</a> over this protocol.<br />
+				To get started create a new room and share the link with others.</span><br /><br />
+				<span id="room_entry">Enter a room name here: <input id="existing" type="text" /><br />
 				<br />
-				<span class='support' style="color:rgb(179, 47, 47);">Notice: only Google Chrome & Firefox nightly are currently supported.</span>
+				or <div id="newRoom" class="button">Generate a random room name</div></span><br /><br />
+				<span class='support' style="color:rgb(179, 47, 47);">Notice: only Google Chrome Canary & Mozilla Firefox are currently supported.</span>
+				<span class="github">
+					<a href="https://github.com/erbbysam/webRTCCopy" target="_blank">Github</a>
+				</span>
 			</div>
 		</div>
 	</div>
@@ -31,16 +49,26 @@
 	<div style="display:none">
 		<div id="userprompt">
 			<div id="username_header">WebRTC Copy</div>
-			Please enter a username:
-			<input id="username" type="text" /><br /><br />
-			<div id="username_warning_header">If you have not been to this website before:</div>
-			This website allows files and messages to be transmitted directly between web browsers.<br />
-			If you did not create a new room, you were likely sent this link.<br />
+			<span class="small" id="room_state"></span>
+			<table><form id="webrtc_input_form">
+			<tr><td style="text-align: right;">Please enter a username:</td>
+			<td><input id="username" type="text" /></td><td></td></tr>
+			<tr><td style="text-align: right;">OTR:</td>
+			<td><select id="encryption_type"><option value="NONE" selected>No</option><option value="OTR">Yes</option></select>
+				<input id="encryption_key" type="text" style="display:none;" placeholder="password" /></td><td><button type="submit">connect</button></td></tr>
+			</form></table>
+			<span class="small">OTR details:<br /> 
+			No: Select this option if you did not agree on a room password ahead of time. All WebRTC connections are already encrypted. However, identity cannot be verified and anyone with the room link can connect to you.<br />
+			Yes: Use <a href="https://github.com/arlolra/otr" target="_blank">OTR</a> for initial setup and chat, <a href="https://code.google.com/p/crypto-js/#RC4,_RC4Drop" target="_blank">RC4Drop</a> for data transfer (one-time key generation will take a few seconds).<br />
+			OTR provides a mechanism to prove identity and prevent others from communicating to you without authorization. For more information - <a href="white_paper.html" target="_blank">encryption information page</a></span>
+			<br /><br />
+			This website allows files and messages to be securly transmitted directly between web browsers.<br />
+			If you did not create a new room, you were likely sent this link. <a href="http://www.rtccopy.com">Click here to create a new room.</a><br />
 			<br />
-			If you were sent this link and you do not trust the source of this link <b>leave this site now</b>.<br />
-			To leave: <a href="http://www.rtccopy.com">Create a new rtccopy.com room</a> or <a href="http://www.google.com">Run away!</a><br />
-			<br />
-			<span class='support' style="color:rgb(179, 47, 47);">Notice: only Google Chrome & Firefox nightly are currently supported.</span>
+			<span class='support' style="color:rgb(179, 47, 47);">Notice: only Google Chrome Canary & Mozilla Firefox are currently supported.</span>
+			<span class="github">
+				<a href="https://github.com/erbbysam/webRTCCopy" target="_blank">Github</a>
+			</span>
 		</div>
 	</div>
 	
@@ -49,17 +77,15 @@
 		<div id="howthisworks">
 			<div id="howthisworks_header">WebRTC Copy</div>
 			WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
-			This website allows files and messages to be transmitted over this protocol.<br />
+			This website allows files(of <i>any</i> size) and messages to be transmitted over this protocol.<br />
 			Send others the link above to allow them to join this room.<br />
-			<table id="warning"><tbody><tr>
-				<td>Warning:<br />-Data is transmitted here without encryption, directly to the other users in this WebRTC room. Use caution if sending sensitive files and communicate file passwords through a more secure channel.<br />
-									-Your browser will likely crash if you attempt to send a single file larger than 100MB, your mileage will vary.</td>
-				<td><table id="colors"><tbody>
-					<tr><td id="good">Good: <a href="http://www.truecrypt.org/" target="_blank">TrueCrypt</a></td></tr>
-					<tr><td id="yellow">Pretty Good: <a href="http://www.7-zip.org/" target="_blank">encrypted .zip</a></td></tr>
-					<tr><td id="bad">Dangerous: finances.xls in a coffee shop</td></tr>
-				</tbody></table></td>		
-			</tr></tbody></table>
+			<span id="OTRWarning"></span>
+			<!-- <table id="warning"><tbody><tr>
+				<td>Warning:<br />
+				-Your browser will likely crash if you attempt to send a single file larger than 100MB, your mileage will vary.<br />
+				
+				<br /></td>	
+			</tr></tbody></table> -->
 		</div>
 		
 		<div id="filelist">
@@ -72,28 +98,40 @@
 		  <span id="roomname"></span><i><input type="file" id="select_file" name="select_file" class="small" /></i>
 		  <div id="messages">
 		  </div>
-		  <input id="chatinput" style="display:none;" type="text" placeholder="Message:"/>
+		  <input id="chatinput" style="display:none;" type="text" placeholder="Message: <enter to send>"/>
 		  <div id="pleasewait">
 			Please wait a few seconds to connect over webrtc.
 		  </div>
 		</div>
 		
-		<span id="question">
-			<a href="javascript:void(0);" onclick="javascript:show_question();">?</a>
+		<span class="question">
+			<a href="https://github.com/erbbysam/webRTCCopy" target="_blank">Github</a> | <a href="javascript:void(0);" onclick="javascript:show_question();">about</a>
 		</span>
 		
 		<div style="display:none">
 			<div id="show_question">
-				<a href="https://github.com/erbbysam/webRTCCopy" target="_blank"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
 				WebRTC Copy<br />
-				&#169; 2013 Samuel Erb<br />
 				<br />
-				(<a href="http://www.erbbysam.com/" target="_blank">website</a>)<br />
-				(<a href="https://twitter.com/erbbysam" target="_blank">twitter</a>)<br />
+				<b>License</b><br />
+				This work is licensed under a <a href="http://creativecommons.org/licenses/by-sa/3.0/deed.en_US" target="_blank">Creative Commons Attribution-ShareAlike 3.0 Unported License</a>.<br />
+				<br />
+				<b>About</b><br />
+				Created by Sam Erb<br />
+				(<a href="http://www.erbbysam.com/" target="_blank">website</a>)
+				(<a href="https://twitter.com/erbbysam" target="_blank">twitter</a>)
 				(<a href="https://github.com/erbbysam" target="_blank">github</a>)<br />
 				<br />
+				This is based on the <a href="https://github.com/erbbysam/webrtc-data.io" target="_blank">webrtc-data.io</a> library developed for this site forked from <a href="https://github.com/webRTC/webRTC.io" target="_blank">webRTC.io</a>.<br />
 				<br />
-				This is based on the <a href="https://github.com/erbbysam/webrtc-data.io" target="_blank">webrtc-data.io</a> library developed for this site forked from <a href="https://github.com/webRTC/webRTC.io" target="_blank">webRTC.io</a>.
+				<b>Notice</b><br />
+				You may not use this website for anything illegal or to share any material you do not have permission to share. This website and it's owners do not assume any liability for use of this site. <br />
+				<br />
+				<b>Privacy</b><br />
+				We do not save <i>any</i> file or chat information, nor do we have the ability to.<br />
+				WebRTC is a P2P protocol, therefore, this information does not pass through our server.<br />
+				rtccopy.com does hold room information to facilitate WebRTC connections which includes:<br />
+				Room ID, browser name & version, encryption type used, usernames and unique socket IDs.<br />
+				<br />
 
 			</div>
 		</div>
@@ -106,7 +144,7 @@
 	<script type="text/javascript">
 
 	  var _gaq = _gaq || [];
-	  _gaq.push(['_setAccount', 'YOUR-CODE-HERE']);
+	  _gaq.push(['_setAccount', 'YOUR ACCOUNT TOKEN']);
 	  _gaq.push(['_trackPageview']);
 
 	  (function() {

@@ -18,8 +18,14 @@ body {
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#00eeeeee',GradientType=0 );
 }
 
+
 #splash_header {
   font: 300 18px 'light','Helvetica Neue',Arial,Helvetica,sans-serif;
+}
+#room_entry {
+  text-align: center;
+  width: 100%;
+  display: block;
 }
 
 #username_header {
@@ -32,11 +38,13 @@ body {
 
 
 #howthisworks {
+  background: none repeat scroll 0 0 #F9F9F9;
+  border: 1px solid #CCCCCC;
   position: absolute;
   top: 0px;
   left: 0px;
-  width: 70%;
   z-index: 0;
+  font-size:12px;
 }
 
 #howthisworks_header {
@@ -87,6 +95,7 @@ body {
   position: absolute;
   left: 3%;
   width: 60%;
+  height: 75%;
   bottom: 10px;
   z-index: 1;
 }
@@ -109,19 +118,25 @@ body {
   border: 1px solid #CCCCCC;
   border-radius: 5px 5px 0px 0px;
   font: 300 18px 'light','Helvetica Neue',Arial,Helvetica,sans-serif;
-  height: 400px;
+  height: 80%;
   margin-bottom: 0px;
   padding: 5px 10px;
   width: 100%;
 }
 
-#question {
+.github {
+  position: absolute;
+  bottom: 0px;
+  right: 2px;
+}
+
+.question {
   position: absolute;
   bottom: 4%;
   right: 18px;
 }
 
-#question a {
+.question a {
 	color:rgb(20, 0, 255);
 	text-decoration: none;
 	font-size:18px;
@@ -137,6 +152,9 @@ body {
 }
 
 .buttonBox {
+  width: 100%;
+  height: 100%;
+  display: block;
   position: absolute;
   top: 2px;
   left: 2px;
