@@ -10,6 +10,9 @@ Communication between Firefox and Chrome is not supported yet, but that is suppo
 At no point is data stored in the browsers memory. Thie code will write and read directly from disk, except Firefox which cannot write directly to disk.
 This is because we must use [idb.filesystem.js] (https://github.com/ebidel/idb.filesystem.js) to mimic the HTML5 FileSystem API for Firefox. It's one limitation is that we cannot provide the user with a file link directly from this (like we can with Chrome). So we must instead write to it, then grab the file as a blob and place it into JS memory so the user can then download it to their local file system.
 
+### Additional crypto/OTR information
+https://rtccopy.com/white_paper.html
+
 ### Install
 (currently hosted on Ubuntu, but any linux server will likely work)
 
