@@ -1,4 +1,4 @@
-# webRTCCopy - http://www.rtccopy.com
+## webRTCCopy - https://www.rtccopy.com
 Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/filesharing website.
 Tested & working in Chrome Canary & Firefox nightly.
 
