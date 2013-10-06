@@ -1,6 +1,14 @@
 # webRTCCopy - http://www.rtccopy.com
 Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/filesharing website.
-Tested & working in Chrome Canary, Chrome stable & Firefox nightly
+Tested & working in Chrome Canary & Firefox nightly. They cannot communicate with each other at this time.
+
+### WebRTC Connection Note
+This website does require a reliable WebRTC connection, which can only be supported in Chrome & Firefox. There is a bug that is preventing this from working in anything before Chrome Canary currently.
+They cannot communicate between Firefox and Chrome yet, but that is suppose to land before Chrome 31 becomes the stable branch (the only fix that would have to be done on this site would be to set the chunk sizes in file-io.js to be the same for both browsers).
+
+### File IO note
+At no point is data stored in the browsers memory. Thie code will write and read directly from disk, except Firefox which cannot write directly to disk.
+This is because we must use [idb.filesystem.js] (https://github.com/ebidel/idb.filesystem.js) to mimic the HTML5 FileSystem API for Firefox. It's one limitation is that we cannot provide the user with a file link directly from this (like we can with Chrome). So we must instead write to it, then grab the file as a blob and place it into JS memory so the user can then download it to their local file system.
 
 ### Install
 (currently hosted on Ubuntu, but any linux server will likely work)
@@ -13,6 +21,8 @@ To start the server:
 ```
 npm install ws express
 node ~/server/site/server.js (or use the forever node.js module to keep it running)
+or for secure/wss: 
+node ~/server/site/server-secure.js (or use the forever node.js module to keep it running)
 ```
 
 That's it!
