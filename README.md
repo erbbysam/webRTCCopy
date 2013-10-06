@@ -1,6 +1,6 @@
 # webRTCCopy - http://www.rtccopy.com
 Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/filesharing website.
-Tested & working in Chrome Canary & Firefox nightly. They cannot communicate with each other at this time.
+Tested & working in Chrome Canary & Firefox nightly.
 
 ### WebRTC Connection Note
 This website does require a reliable WebRTC connection, which can only be supported in Chrome & Firefox. There is a bug that is preventing this from working in anything before Chrome Canary currently.
