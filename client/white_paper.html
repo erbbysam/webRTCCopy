@@ -62,24 +62,24 @@ OTR offers a feature called <a href="http://en.wikipedia.org/wiki/Socialist_mill
 established, can be used check if other users entered the same password, without sharing <i>any</i> information about that password.<br />
 <br />
 Why not just use a third party to verify authorization?<br />
-Then we would be trusting a third party's login system, which this implentation aims to avoid.<br />
+Then we would be trusting a third party's login system, which this implementation aims to avoid.<br />
 <br />
 I don't trust this site. What can I do?<br />
-Don't trust it. Host at least the client portion of this site yourself. You are free to use the node.js server (used to setup and manage rooms and user connections) on rtccopy.com in order to faciliate 
+Don't trust it. Host at least the client portion of this site yourself. You are free to use the node.js server (used to setup and manage rooms and user connections) on rtccopy.com in order to facilitate  
 connections and hold room information. The server does not ever get sent or store the OTR password (see Privacy section in "About" above) and users would be able 
 to connect between versions of this site hosted on multiple websites (even over OTR), as long as the same node.js server is used.<br />
 <br />
 Why not just verify authorization with OTR, then send everything over the DTLS connection?<br />
-A malicious third party could just blindly foward the OTR packets back and forth after establishing a DTLS connection with both users. If the OTR traffic 
+A malicious third party could just blindly forward the OTR packets back and forth after establishing a DTLS connection with both users. If the OTR traffic 
 is then sent in the clear, they would not be authorized, but would be able to see all plaintext traffic.<br />
 <br />
 OK, so how is OTR implemented?<br />
 When OTR is enabled:<br />
 - We use OTR's SMP in order to verify password both parties entered is the same.<br />
-- Everything besides file data is sent & recieved over the OTR channel (that includes messages & file meta data) only after SMP is successful.<br />
+- Everything besides file data is sent & received  over the OTR channel (that includes messages & file meta data) only after SMP is successful.<br />
 - A quick note about file transfers - a user requests a single chunk at a time, when OTR is enabled that also contains a nonce and a hash of the previous chunk<br />
-- File data is encrypted using Rabbit(stream cipher) with a shared random secret negotiated during OTR setup + the nonce recived in the chunk request. This is done for speed as the OTR channel would create a bottleneck.<br />
-- The sender recieves the hash from the previous chunk and verifies that. If it does not match, the sender stops the download<br />
+- File data is encrypted using Rabbit(stream cipher) with a shared random secret negotiated during OTR setup + the nonce received in the chunk request. This is done for speed as the OTR channel would create a bottleneck.<br />
+- The sender receives the hash from the previous chunk and verifies that. If it does not match, the sender stops the download<br />
 - to reiterate - ALL information (besides Rabbit'd file data) is sent over the OTR channel<br />
 OTR library used - <a href="https://github.com/arlolra/otr" target="_blank">https://github.com/arlolra/otr</a><br />
 Rabbit(stream cipher) library used - <a href="https://code.google.com/p/crypto-js/#Rabbit" target="_blank">https://code.google.com/p/crypto-js/#Rabbit</a><br />
@@ -135,22 +135,8 @@ Questions?<br />
 	<script src="bootstrap/js/bootstrap.min.js"></script>
     
 	<!-- more site js -->
-   	 <script src="js/file-io.js"></script>
+   	<script src="js/file-io.js"></script>
 	<script src="js/script.js"></script>
 	
-	<!-- Google Analytics js -->
-	<script type="text/javascript">
-
-	  var _gaq = _gaq || [];
-	  _gaq.push(['_setAccount', 'YOUR KEY HERE']);
-	  _gaq.push(['_trackPageview']);
-
-	  (function() {
-		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-	  })();
-
-	</script>
   </body>
 </html>
