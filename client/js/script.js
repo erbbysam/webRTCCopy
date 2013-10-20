@@ -1,4 +1,3 @@
-
 /***************
 	ROOM INIT & functionality
 	2013 Samuel Erb
@@ -30,7 +29,7 @@ function display_31_error() {
 function display_error() {
 	/* REQUIRED SCTP data channels behind flag in 29 & 30 */
 	if ($.browser.name == "chrome" && ($.browser.versionNumber == 29 || $.browser.versionNumber == 30)) {
-		boot_alert('You are using Chrome version ' + $.browser.versionNumber + ', please turn the "Enable SCTP Data Channels" flag in: Chrome://flags/#enable-sctp-data-channels');
+		boot_alert('You are using Chrome version ' + $.browser.versionNumber + ', please turn the "Enable SCTP Data Channels" flag in: chrome://flags/#enable-sctp-data-channels');
 	} else {
 		if ($.browser.name == "chrome") {
 			boot_alert('Your browser is not supported. Please update to the latest version of Chrome to use this site. Please try Firefox 24+ or Chrome Canary 32+.');
