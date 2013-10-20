@@ -165,16 +165,16 @@ function otr_rcv_msg(id,msg) {
 /***************
 	Crypto-JS functions 
 	note: we had to redefine CryptoJS's namespace to not conflict with OTR CryptoJS code. No other changes were made.
-			TODO - bring RC4Drop functionality into OTR's CryptoJS namespace
-decrpyt & encrypt: file chunks QUICKLY using CryptoJS's RC4DROP (RC4 dropping first few bits to avoid RC4 crypto problems)
+			TODO - bring Rabbit's functionality into OTR's CryptoJS namespace
+decrpyt & encrypt: file chunks QUICKLY using CryptoJS's Rabbit stream cipher
 key:We are going to combine the symetric key that was created during our OTR initiation with a randomly generated value.
     That second random bit is to avoid sending the the same encrypted text multiple times. As we're sending this random value over our OTR channel
     when we request a chunk, we should be able to assume it's safe to use.
 ****************/
 
 function generate_second_half_RC4_random() {
-	var wordArray = RC4CryptoJS.lib.WordArray.random(128/8); /* want this to be fast, so let's just grab 128 bits */
-	return RC4CryptoJS.enc.Base64.stringify(wordArray);
+	var wordArray = RabbitCryptoJS.lib.WordArray.random(128/8); /* want this to be fast, so let's just grab 128 bits */
+	return RabbitCryptoJS.enc.Base64.stringify(wordArray);
 }
 
 /* decrypt an inbound file peice */
@@ -182,7 +182,7 @@ function file_decrypt(id, message) {
 	if (this.buddy_crypto_verified[id]) {
 		hash = CryptoJS.SHA256(message).toString(CryptoJS.enc.Base64); //console.log(hash);
 		
-		message = RC4CryptoJS.RC4Drop.decrypt(JSON.parse(message),buddy_crypto_recieve_symetric_keys[id] + request_chunk_decrypt_rand[id]).toString(CryptoJS.enc.Utf8);
+		message = RabbitCryptoJS.Rabbit.decrypt(JSON.parse(message),buddy_crypto_recieve_symetric_keys[id] + request_chunk_decrypt_rand[id]).toString(CryptoJS.enc.Utf8);
 		process_binary(id, base64DecToArr(message).buffer, hash); /* send back a hash as well to send back to the original host with the next request */
 	}
 }
@@ -192,7 +192,7 @@ function file_encrypt_and_send(id, message, additional_key, chunk_num) {
 	/* MUST have completed OTR first */
 	if (this.buddy_crypto_verified[id]) {
 		message = _arrayBufferToBase64(message);
-		message = JSON.stringify(RC4CryptoJS.RC4Drop.encrypt(message, buddy_crypto_send_symetric_keys[id] + additional_key));
+		message = JSON.stringify(RabbitCryptoJS.Rabbit.encrypt(message, buddy_crypto_send_symetric_keys[id] + additional_key));
 		
 		if (chunk_num == 0) {
 			hashed_message[id] = [];

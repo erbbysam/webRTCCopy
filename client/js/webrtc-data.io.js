@@ -2,6 +2,12 @@
 	CLIENT
 	2013 Samuel Erb
 ****************/
+
+/* 
+ * 2 implementation notes:
+ *	This is currently configured to fail on unreliable connections (see below ~line 438)
+ *  This has the function boot_alert undefined. Change these two calls to alert or define boot_alert if needed.
+ */
  
 /* Fallbacks for vendor-specific variables until the spec is finalized.
  * Going to use jquery.browser to detect major version # (to help compatibiliity
@@ -19,19 +25,15 @@ var room_info_socket = {};
 
 if (is_chrome) {
 	var PeerConnection =  window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
+	var SessionDescription = RTCSessionDescription;
+	var iceCanidate = RTCIceCandidate; 
 } else {
 	if (browser_name == "firefox") {
+		var iceCanidate = mozRTCIceCandidate;
+		var SessionDescription = mozRTCSessionDescription;
 		var PeerConnection = mozRTCPeerConnection;
 	}
 }
-if (is_chrome) {
-	var SessionDescription = RTCSessionDescription;
-} else {
-	if (browser_name == "firefox") {
-		var SessionDescription = mozRTCSessionDescription;
-	}
-}
-
 
 (function() {
 
@@ -197,11 +199,11 @@ if (is_chrome) {
 		
 		/* Display warning about room we are entering, only do so for browser name (browser version seems less important atm) */
 		if (data.browser != browser_name) {
-			alert("Warning!\nThe room you are entering was started by someone with a different browser. You should always match browsers (for now) and try to match major version number:\nYou: " + browser_name + " " + browser_ver + "\nRoom Creator: " + data.browser + " " + data.browserVer + "\n\nTrying to connect now!");
+			boot_alert("Warning!\nThe room you are entering was started by someone with a different browser. You should always match browsers (for now) and try to match major version number:\nYou: " + browser_name + " " + browser_ver + "\nRoom Creator: " + data.browser + " " + data.browserVer + "\n\nTrying to connect now!");
 		}
 		
 		if (data.encryption != encryption_type) {
-			alert("Warning!\n The room you are entering was started by someone with a different encryption type.\nYou: "+encryption_type+"\nRoom creator: "+data.encryption);
+			boot_alert("Warning!\n The room you are entering was started by someone with a different encryption type.\nYou: "+encryption_type+"\nRoom creator: "+data.encryption);
 		}
 		
         // fire connections event and pass peers
@@ -211,7 +213,7 @@ if (is_chrome) {
       });
 
       rtc.on('receive_ice_candidate', function(data) {
-        var candidate = new RTCIceCandidate(JSON.parse(data.candidate)); /* TODO - ? - mozRTCIceCandidate */
+        var candidate = new iceCanidate(JSON.parse(data.candidate));
         rtc.peerConnections[data.socketId].addIceCandidate(candidate);
         rtc.fire('receive ice candidate', candidate);
       });

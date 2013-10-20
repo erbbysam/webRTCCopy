@@ -36,21 +36,6 @@ body {
   font: 300 18px 'light','Helvetica Neue',Arial,Helvetica,sans-serif;
 }
 
-
-#howthisworks {
-  background: none repeat scroll 0 0 #F9F9F9;
-  border: 1px solid #CCCCCC;
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  z-index: 0;
-  font-size:12px;
-}
-
-#howthisworks_header {
-  font: 300 18px 'light','Helvetica Neue',Arial,Helvetica,sans-serif;
-}
-
 #warning {
    margin-top: 5px;
 }
@@ -76,30 +61,6 @@ body {
    background-color: rgb(240, 203, 203);
 }
 
-#filelist {
-  background: none repeat scroll 0 0 #F9F9F9;
-  border: 1px solid #CCCCCC;
-  position: absolute;
-  height: 95%;
-  width: 25%;
-  right: 10px;
-  top: 10px;
-  z-index: 0;
-}
-
-#filelist_header {
-  font: 300 16px 'light','Helvetica Neue',Arial,Helvetica,sans-serif;
-}
-
-#chatbox {
-  position: absolute;
-  left: 3%;
-  width: 60%;
-  height: 75%;
-  bottom: 10px;
-  z-index: 1;
-}
-
 #chatinput {
   background: none repeat scroll 0 0 #F9F9F9;
   border: 1px solid #CCCCCC;
@@ -112,34 +73,25 @@ body {
   width: 100%;
 }
 
+#chatbox {
+  height: 95%;
+}
+
+#chatbox-panel {
+  height: calc(100% - 45px);
+}
+
 #messages {
   overflow: scroll;
-  background: none repeat scroll 0 0 #F9F9F9;
+  background-color: rgb(249,249,249,0.6);
   border: 1px solid #CCCCCC;
   border-radius: 5px 5px 0px 0px;
   font: 300 18px 'light','Helvetica Neue',Arial,Helvetica,sans-serif;
-  height: 80%;
+  height: calc(100% - 45px);
+  min-height:100px;
   margin-bottom: 0px;
   padding: 5px 10px;
   width: 100%;
-}
-
-.github {
-  position: absolute;
-  bottom: 0px;
-  right: 2px;
-}
-
-.question {
-  position: absolute;
-  bottom: 4%;
-  right: 18px;
-}
-
-.question a {
-	color:rgb(20, 0, 255);
-	text-decoration: none;
-	font-size:18px;
 }
 
 .small {
@@ -191,4 +143,131 @@ body {
 .button:active {
   position:relative;
   top:1px;
+}
+
+
+/* offcanvas userlist on smaller screens, ie. mobile */
+
+@media screen and (max-width: 768px) {
+  .row-offcanvas {
+    position: relative;
+    -webkit-transition: all 0.25s ease-out;
+    -moz-transition: all 0.25s ease-out;
+    transition: all 0.25s ease-out;
+  }
+
+  .row-offcanvas-right
+  .sidebar-offcanvas {
+    right: -50%; /* 6 columns */
+  }
+
+  .row-offcanvas-left
+  .sidebar-offcanvas {
+    left: -50%; /* 6 columns */
+  }
+
+  .row-offcanvas-right.active {
+    right: 50%; /* 6 columns */
+  }
+
+  .row-offcanvas-left.active {
+    left: 50%; /* 6 columns */
+  }
+
+  .sidebar-offcanvas {
+    position: absolute;
+    top: 0;
+    width: 50%; /* 6 columns */
+  }
+
+  .btn_off {
+    float: left;
+    position: absolute;
+    top: -20px;
+  }
+}
+
+/* bootstrap overrides */
+
+body {
+	padding-top:70px; /* header shift */
+}
+
+.container {
+	max-width: 2170px;
+}
+
+.panel {
+	background-color:rgba(255,255,255,0.6);
+}
+
+.panel-default > .panel-heading {
+	background-color:rgba(245,245,245,0.6);
+}
+
+input[type="file"] {
+	display:inline;
+}
+
+.navbar-inverse .navbar-brand {
+  color: #fff;
+}
+
+@media screen and (min-width: 768px) {
+	.modal-dialog {
+		width: 680px;
+	}
+}
+
+.frontpage_header {
+	text-align:center;
+}
+
+.support {
+  color:rgb(179, 47, 47);
+}
+
+.connect-btn {
+  margin-top:22px;
+}
+
+.username-panel {
+  width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-signin {
+  max-width: 330px;
+  padding: 15px;
+  margin: 0 auto;
+}
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+  margin-bottom: 10px;
+}
+.form-signin .checkbox {
+  font-weight: normal;
+}
+.form-signin .form-control {
+  position: relative;
+  font-size: 16px;
+  height: auto;
+  padding: 10px;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+.form-signin .form-control:focus {
+  z-index: 2;
+}
+.form-signin input[type="text"] {
+  margin-bottom: -1px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }

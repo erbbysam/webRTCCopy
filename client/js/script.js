@@ -5,7 +5,7 @@
 	Creative Commons Attribution-ShareAlike 3.0 Unported License
 ****************/
 
-//var PeerConnection = window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection;
+var ROOM_TITLE = "WebRTC Copy - Room "; /* constant - room title bar string */
 
 /* your username */
 var username = "";
@@ -20,17 +20,24 @@ var encryption_key = "";
 /* intro function */
 initRTCCopy();
 
+/* Chrome 31 does not work right now :( */
+function display_31_error() {
+	if ($.browser.name == "chrome" && ($.browser.versionNumber < 32) ) {
+		boot_alert('Due to a bug in your browser, this website will not work, sorry. Please try Firefox 24+ or Chrome Canary 32+.');
+	}
+}
+
 function display_error() {
 	/* REQUIRED SCTP data channels behind flag in 29 & 30 */
 	if ($.browser.name == "chrome" && ($.browser.versionNumber == 29 || $.browser.versionNumber == 30)) {
-		alert('You are using Chrome version ' + $.browser.versionNumber + ', please turn the "Enable SCTP Data Channels" flag on: Chrome://flags/#enable-sctp-data-channels.');
+		boot_alert('You are using Chrome version ' + $.browser.versionNumber + ', please turn the "Enable SCTP Data Channels" flag in: Chrome://flags/#enable-sctp-data-channels');
 	} else {
 		if ($.browser.name == "chrome") {
-			alert('Your browser is not supported. Please update to the latest version of Chrome to use this site. Recommended: Chrome version 29 or greater.');
+			boot_alert('Your browser is not supported. Please update to the latest version of Chrome to use this site. Please try Firefox 24+ or Chrome Canary 32+.');
 		}else if ($.browser.name == "firefox") {
-			alert('Your browser is not supported. Please update to the latest version of Firefox to use this site.');
+			boot_alert('Your browser is not supported. Please update to Firefox 24+.');
 		}else {
-			alert('Your browser is not supported. Please use Chrome or Firefox, sorry :(');
+			boot_alert('Your browser is not supported. Please use Chrome or Firefox, sorry :(');
 		}
 	}
 }
@@ -68,6 +75,7 @@ function initRTCCopy() {
 		if (event.preventDefault) {
 			event.preventDefault();
 		}
+		
 		transition_from_username_to_main();
 		return false;
 	});
@@ -77,24 +85,28 @@ function initRTCCopy() {
 	if (r != 0){
 		/* we have a room #, so lets get some information on this room */
 		rtc.room_info(rtccopy_server, r); /* This sends a request (logic processed via 'recieve room info' cb) */
+		
+		/* let's update the title bar as well */
+		document.title = ROOM_TITLE+r;
 
 		/* existing room, show username & crypto input */
-		$.colorbox.close(); // hide the colorbox!
-		$.colorbox({onLoad: function() {$('#cboxClose').remove();}, href:"#userprompt", inline:true, open:true, overlayClose:false, escKey:false, transition:'none', width:"640px", height:"450px"});
+		$("#userprompt").show();
 	} else {
-		/* no room number? make a colorbox! */
-		$.colorbox({onLoad: function() {$('#cboxClose').remove();}, href:"#roomprompt", inline:true, open:true, overlayClose:false, escKey:false, transition:'none', width:"640px", height:"300px"});
+		/* no room number? lets make one*/
+		$("#roomprompt").show();
 	
 		/* allow entering a room number */
-		var existing_input = document.getElementById("existing");
-		existing_input.addEventListener('keydown', function(event) {
-			var key = event.which || event.keyCode;
-			if(key === 13) {
-				window.location.hash = existing_input.value;
-				location.reload();
-			}
-		}, false);
+		document.getElementById('webrtc_room_form').addEventListener("submit", function(event) {
+			var existing_input = document.getElementById("existing");
+			
+			event.preventDefault();
+			window.location.hash = existing_input.value;
+			location.reload();
+		});
 	}
+	
+	/* TODO - somewhat temporary - alert about SCTP bug in pre-canary Chrome browsers */
+	display_31_error();
 	
 	/* let's run a quick check before we begin to make sure we have rtc datachannel support */
 	var rtc_status = rtc.checkDataChannelSupport();
@@ -112,9 +124,9 @@ function process_room_state(data) {
 		if (browser_ver == data.browserVer) { browserVer_color = 'green'; }
 		
 		if (data.encryption == "NONE") {
-			$("#room_state").append('The creator of this room used <span style="color:'+browser_color+'">'+ data.browser + '</span> <span style="color:'+browserVer_color+'">' + data.browserVer + '</span> without OTR.<br />');
+			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ data.browser + '</span> <span style="color:'+browserVer_color+'">' + data.browserVer + '</span> without OTR.<br /><br />');
 		} else {
-			$("#room_state").append('The creator of this room used <span style="color:'+browser_color+'">'+ data.browser + '</span> <span style="color:'+browserVer_color+'">' + data.browserVer + '</span> with OTR encryption.<br />');
+			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ data.browser + '</span> <span style="color:'+browserVer_color+'">' + data.browserVer + '</span> with OTR encryption.<br /><br />');
 		}
 		
 		/* set the dropdown box to default to the encryption value */
@@ -131,15 +143,21 @@ function transition_from_username_to_main() {
 	username = document.getElementById("username").value;
 	encryption_type = document.getElementById("encryption_type").value;
 	encryption_key = document.getElementById("encryption_key").value;
+	
+	/* clear out any warnings that may have popped up previously */
+	$("#alerts").empty();
+	
+	/* check for empty input */
 	if (username == "") {
-		alert("Please enter a username.");
+		boot_alert("Please enter a username.");
 		return;
 	}
 	if (encryption_type != "NONE" && encryption_key == "") {
-		alert("Please specify a encryption key.");
+		boot_alert("Please specify a encryption key.");
 		return;
 	}
-	$.colorbox.close(); // hide the colorbox!
+	
+	$("#userprompt").hide(); // hide the login!
 	init(); /* THIS IS THE MAIN CONNECTING FUNCTION CALL! */
 	$("#chat_display").show();
 }
@@ -226,7 +244,7 @@ function init() {
 	otr_init_function();
 	$('#OTRWarning').html("File transfer will be slower in encrpyted mode.<br />");
   } else {
-	$('#OTRWarning').html("You are not using OTR, anyone with this link can join this room and other users identities cannot be verified.<br />");
+	$('#OTRWarning').html("You are not using OTR, therefore anyone with this link can join this room and other users identities cannot be verified.<br />");
   }
   
   if (room != 0) {
@@ -280,9 +298,9 @@ function init() {
 	  /* start the chat box */
 	  initChat();
 	  
-	  /* add welcome message */
+	  /* add Room Name */
 	  var roomname = document.getElementById('roomname');
-	  roomname.innerHTML = '<span class="small">room</span> ' + room + ' <span class="small">username</span> ' + username + ' <span class="small">&nbsp;&nbsp;&nbsp;&nbsp;Drag files into the browser to upload to other users or </i>';
+	  roomname.innerHTML = 'Room: ' + room;
   }
 }
 
@@ -359,6 +377,11 @@ function packet_inbound(id, message) {
 	}
 }
 
+/* bootstrap alerts! */
+function boot_alert(text) {
+	$("#alerts").append('<div class="alert alert-danger alert-dismissable">'+text+'<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button></div>');
+}
+
 
 /* HSV idea from http://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/ */
 /* returns random hex color */
@@ -403,7 +426,9 @@ window.onresize = function(event) {
   //onresize - do nothing
 };
 
-/* show (C) notice, etc */
-function show_question() {
-	$.colorbox({href:"#show_question", inline:true, open:true, transition:'none', width:"640px", height:"600px"});
-}
+/* bootstrap toggle userlist on smaller screens */
+$(document).ready(function() {
+	$('[data-toggle=offcanvas]').click(function() {
+		$('.row-offcanvas').toggleClass('active');
+	});
+});

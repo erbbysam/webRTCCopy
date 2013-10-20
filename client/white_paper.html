@@ -1,18 +1,156 @@
 <html>
-<body>
-https://github.com/erbbysam/webRTC-data.io <br />
+  <head>
+    <title>WebRTC Copy</title>
+	
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Crypto Implementation of rtccopy.com">
+    <meta name="author" content="erbbysam">
+    <link rel="shortcut icon" href="images/favicon.ico">
+    
+	<!-- jquery -->
+    <script src="ext-js/jquery.js"></script>
+    <script src="ext-js/jquery.browser.min.js"></script>
+	<script src="ext-js/base64-arraybuffer.js"></script><!--TODO - needed? -->
+	<script src="ext-js/idb.filesystem.min.js"></script>
+	<!-- OTR -->
+	<script src="ext-js/otr/salsa20.js"></script>
+	<script src="ext-js/otr/bigint.js"></script>
+	<script src="ext-js/otr/crypto.js"></script>
+	<script src="ext-js/otr/eventemitter.js"></script>
+	<script src="ext-js/otr/otr.js"></script>
+	<!-- additional crypto-js -->
+	<script src="ext-js/crypto-js/core.js"></script> 
+	<script src="ext-js/crypto-js/rabbit.js"></script> 
+	<!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet"> <!-- min. -->
+	
+	<!-- site CSS -->
+    <link type="text/css" href="style.css" rel="stylesheet"></link>
+	<!--  site js  -->
+	<script src="js/crypto.js"></script>
+    <script src="js/webrtc-data.io.js"></script>
+  </head>
+<body style="background:white;">
+     <div class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+	  <div class="container">
+		<div class="navbar-header">
+		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+		  </button>
+		  <span class="navbar-brand">WebRTC Copy</span>
+		</div>
+		<div class="collapse navbar-collapse">
+		  <ul class="nav navbar-nav">
+			<li><a data-toggle="modal" href="#myModal">About</a></li>
+			<li><a href="https://github.com/erbbysam/webRTCCopy" target="_blank">Github</a></li>
+		  </ul>
+		</div><!-- /.nav-collapse -->
+	  </div><!-- /.container -->
+     </div><!-- /.navbar -->
+<a href="https://rtccopy.com">Click here to return to the main page</a> <br />
+<h3>Cryptology Details</h3>
+<div>
+While <a href="http://www.matasano.com/articles/javascript-cryptography/" target="_blank">javascript cryptology is less than ideal in the browser</a>, 
+this website uses OTR(or Off The Record) in order to add an additional layer of security, as well as verify the authorization of the other users in the 
+RTCCopy.com room. WebRTC already mandates encryption over DTLS, and this website does not disable that functionality. However, <a href="http://chimera.labs.oreilly.com/books/1230000000545/ch18.html#_secure_communication_with_dtls">there is no authentication scheme 
+built into this DTLS implementation</a>.<br />
 <br />
-THIS PAGE NEEDS TO BE EXPANDED FURTHER<br />
+How does OTR verify identity of other users?<br />
+OTR offers a feature called <a href="http://en.wikipedia.org/wiki/Socialist_millionaire" target="_blank">SMP</a> which, once an OTR connection has been 
+established, can be used check if other users entered the same password, without sharing <i>any</i> information about that password.<br />
 <br />
-Good news! WebRTC already mandates encryption over DTLS!<br />
-http://chimera.labs.oreilly.com/books/1230000000545/ch18.html#_secure_communication_with_dtls<br />
+Why not just use a third party to verify authorization?<br />
+Then we would be trusting a third party's login system, which this implentation aims to avoid.<br />
 <br />
-Bad news: there is no authentication scheme. This website gets around that, not by requiring 3rd party authorization,<br />
-but by negotiating an OTR encrypted tunnel between users. While this is potentially overkill, OTR does offer an added level of security.<br />
+I don't trust this site. What can I do?<br />
+Don't trust it. Host at least the client portion of this site yourself. You are free to use the node.js server (used to setup and manage rooms and user connections) on rtccopy.com in order to faciliate 
+connections and hold room information. The server does not ever get sent or store the OTR password (see Privacy section in "About" above) and users would be able 
+to connect between versions of this site hosted on multiple websites (even over OTR), as long as the same node.js server is used.<br />
 <br />
-Details:<br />
-1) We use OTR's SMP in order to verify password both parties entered is the same<br />
-2) Files are encrypted using RC4Drop with (the password negotiated during OTR setup + a random per-chunk nonce sent over from receiving end sent over OTR channel)<br />
-3) Once files are received a hash is sent back to the other party over the OTR channel in order to verify file integrity<br />
-</body>
+Why not just verify authorization with OTR, then send everything over the DTLS connection?<br />
+A malicious third party could just blindly foward the OTR packets back and forth after establishing a DTLS connection with both users. If the OTR traffic 
+is then sent in the clear, they would not be authorized, but would be able to see all plaintext traffic.<br />
+<br />
+OK, so how is OTR implemented?<br />
+When OTR is enabled:<br />
+- We use OTR's SMP in order to verify password both parties entered is the same.<br />
+- Everything besides file data is sent & recieved over the OTR channel (that includes messages & file meta data) only after SMP is successful.<br />
+- A quick note about file transfers - a user requests a single chunk at a time, when OTR is enabled that also contains a nonce and a hash of the previous chunk<br />
+- File data is encrypted using Rabbit(stream cipher) with a shared random secret negotiated during OTR setup + the nonce recived in the chunk request. This is done for speed as the OTR channel would create a bottleneck.<br />
+- The sender recieves the hash from the previous chunk and verifies that. If it does not match, the sender stops the download<br />
+- to reiterate - ALL information (besides Rabbit'd file data) is sent over the OTR channel<br />
+OTR library used - <a href="https://github.com/arlolra/otr" target="_blank">https://github.com/arlolra/otr</a><br />
+Rabbit(stream cipher) library used - <a href="https://code.google.com/p/crypto-js/#Rabbit" target="_blank">https://code.google.com/p/crypto-js/#Rabbit</a><br />
+<br />
+Questions?<br />
+<a href="https://github.com/erbbysam/webRTCCopy/issues" target="_blank">Feel free to ask!</a><br />
+<br />
+
+</div>
+
+	<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+		  <div class="modal-content">
+			<div class="modal-header">WebRTC Copy</div>
+			<div class="modal-body">
+				WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
+				This website allows files(of <i>any</i> size) and messages to be transmitted over this protocol.<br />
+				<span id="OTRWarning"></span>
+				Send others the link above to allow them to join this room.<br />
+				<br />
+				<b>License</b><br />
+				This work is licensed under a <a href="http://creativecommons.org/licenses/by-sa/3.0/deed.en_US" target="_blank">Creative Commons Attribution-ShareAlike 3.0 Unported License</a>.<br />
+				<br />
+				<b>About</b><br />
+				Created by Sam Erb<br />
+				(<a href="http://www.erbbysam.com/" target="_blank">website</a>)
+				(<a href="https://twitter.com/erbbysam" target="_blank">twitter</a>)
+				(<a href="https://github.com/erbbysam" target="_blank">github</a>)<br />
+				<br />
+				This is based on the <a href="https://github.com/erbbysam/webrtc-data.io" target="_blank">webrtc-data.io</a> library developed for this site forked from <a href="https://github.com/webRTC/webRTC.io" target="_blank">webRTC.io</a>.<br />
+				<br />
+				<b>Crypto Information</b><br />
+				<a href="white_paper.html" target="_blank">Implementation details can be found here</a>.<br />
+				<br />
+				<b>Notice</b><br />
+				You may not use this website for anything illegal or to share any material you do not have permission to share. While we have made every effort to garuntee the security of this site, the cryptographic implementation has not been independently verified, tested or audited. This website and it's owners do not assume any liability for use of this site. <br />
+				<br />
+				<b>Privacy</b><br />
+				We do not save <i>any</i> file or chat information, nor do we have the ability to.<br />
+				WebRTC is a P2P protocol, therefore, this information does not pass through our server.<br />
+				rtccopy.com does hold room information to facilitate WebRTC connections which includes:<br />
+				Room ID, browser name & version, encryption type used, usernames and unique socket IDs.<br />
+				<br />
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+			</div>
+		  </div>
+		</div>
+	</div>
+
+	<!-- Bootstrap core js -->
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+    
+	<!-- more site js -->
+   	 <script src="js/file-io.js"></script>
+	<script src="js/script.js"></script>
+	
+	<!-- Google Analytics js -->
+	<script type="text/javascript">
+
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', 'YOUR KEY HERE']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+
+	</script>
+  </body>
 </html>
