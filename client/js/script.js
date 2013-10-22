@@ -1,3 +1,4 @@
+
 /***************
 	ROOM INIT & functionality
 	2013 Samuel Erb
@@ -123,9 +124,9 @@ function process_room_state(data) {
 		if (browser_ver == data.browserVer) { browserVer_color = 'green'; }
 		
 		if (data.encryption == "NONE") {
-			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ data.browser + '</span> <span style="color:'+browserVer_color+'">' + data.browserVer + '</span> without OTR.<br /><br />');
+			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ sanitize(data.browser) + '</span> <span style="color:'+browserVer_color+'">' + sanitize(data.browserVer) + '</span> without OTR.<br /><br />');
 		} else {
-			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ data.browser + '</span> <span style="color:'+browserVer_color+'">' + data.browserVer + '</span> with OTR encryption.<br /><br />');
+			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ sanitize(data.browser) + '</span> <span style="color:'+browserVer_color+'">' + sanitize(data.browserVer) + '</span> with OTR encryption.<br /><br />');
 		}
 		
 		/* set the dropdown box to default to the encryption value */
@@ -185,6 +186,7 @@ function systemMessage(msg) {
 
 /* this isn't actual security, just avoids accidential html input */
 function sanitize(msg) {
+  msg = msg.toString();
   return msg.replace(/</g, '&lt;');
 }
 
@@ -299,7 +301,7 @@ function init() {
 	  
 	  /* add Room Name */
 	  var roomname = document.getElementById('roomname');
-	  roomname.innerHTML = 'Room: ' + room;
+	  roomname.innerHTML = 'Room: ' + sanitize(room);
   }
 }
 

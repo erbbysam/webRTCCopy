@@ -257,6 +257,8 @@ function process_data(data) {
 	
 		/* if it contains file_meta, must be meta data! */
 		this.recieved_meta[data.id] = data.file_meta;
+		this.recieved_meta[data.id].name = sanitize(this.recieved_meta[data.id].name);
+		
 		//console.log(this.recieved_meta[data.id]);
 		this.recieved_chunks[data.id] = []; //clear out our chunks
 		
@@ -352,6 +354,7 @@ function cancel_file(id, username) {
 function create_or_clear_container(id, username) {
 	var filelist = document.getElementById('filelist_cointainer');
 	var filecontainer = document.getElementById(id);
+	username = sanitize(username);
 	
 	/* if the user is downloading something from this person, we should only clear the inside span to save the cancel button */
 	if (this.downloading[id] == true) {
