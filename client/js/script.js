@@ -87,7 +87,7 @@ function initRTCCopy() {
 		rtc.room_info(rtccopy_server, r); /* This sends a request (logic processed via 'recieve room info' cb) */
 		
 		/* let's update the title bar as well */
-		document.title = ROOM_TITLE+r;
+		document.title = ROOM_TITLE+sanitize(r);
 
 		/* existing room, show username & crypto input */
 		$("#userprompt").show();
@@ -184,10 +184,19 @@ function systemMessage(msg) {
   messages.scrollTop = 10000;
 }
 
-/* this isn't actual security, just avoids accidential html input */
+/* Use this to avoid xss
+ * recommended escaped char's found here - https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet#RULE_.231_-_HTML_Escape_Before_Inserting_Untrusted_Data_into_HTML_Element_Content
+ */
 function sanitize(msg) {
   msg = msg.toString();
-  return msg.replace(/</g, '&lt;');
+  return msg.replace(/[\<\>"'\/]/g,function(c) {  var sanitize_replace = {
+													"<" : "&lt;",
+													">" : "&gt;",
+													'"' : "&quot;",
+													"'" : "&#x27;",
+													"/" : "&#x2F;"
+												}
+												return sanitize_replace[c]; });
 }
 
 /* WebRTC functionality */

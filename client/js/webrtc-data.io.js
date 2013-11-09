@@ -35,6 +35,21 @@ if (is_chrome) {
 	}
 }
 
+/* Use this to avoid xss
+ * recommended escaped char's found here - https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet#RULE_.231_-_HTML_Escape_Before_Inserting_Untrusted_Data_into_HTML_Element_Content
+ */
+function sanitize(msg) {
+  msg = msg.toString();
+  return msg.replace(/[\<\>"'\/]/g,function(c) {  var sanitize_replace = {
+													"<" : "&lt;",
+													">" : "&gt;",
+													'"' : "&quot;",
+													"'" : "&#x27;",
+													"/" : "&#x2F;"
+												}
+												return sanitize_replace[c]; });
+}
+
 (function() {
 
   var rtc;
@@ -197,13 +212,18 @@ if (is_chrome) {
         rtc.usernames = data.usernames;
         rtc._me = data.you;
 		
+		/* we already sanitize everything later, but rather be safe than sorry */
+		for (var i = 0, len = rtc.usernames.length; i < len; i++) {
+		  rtc.usernames[i] = sanitize(rtc.usernames[i]);
+		}
+		
 		/* Display warning about room we are entering, only do so for browser name (browser version seems less important atm) */
 		if (data.browser != browser_name) {
-			boot_alert("Warning!\nThe room you are entering was started by someone with a different browser. You should always match browsers (for now) and try to match major version number:\nYou: " + browser_name + " " + browser_ver + "\nRoom Creator: " + data.browser + " " + data.browserVer + "\n\nTrying to connect now!");
+			boot_alert("Warning!\nThe room you are entering was started by someone with a different browser. You should always match browsers (for now) and try to match major version number:\nYou: " + browser_name + " " + browser_ver + "\nRoom Creator: " + sanitize(data.browser) + " " + sanitize(data.browserVer) + "\n\nTrying to connect now!");
 		}
 		
 		if (data.encryption != encryption_type) {
-			boot_alert("Warning!\n The room you are entering was started by someone with a different encryption type.\nYou: "+encryption_type+"\nRoom creator: "+data.encryption);
+			boot_alert("Warning!\n The room you are entering was started by someone with a different encryption type.\nYou: "+encryption_type+"\nRoom creator: "+sanitize(data.encryption));
 		}
 		
         // fire connections event and pass peers
@@ -221,7 +241,7 @@ if (is_chrome) {
       rtc.on('new_peer_connected', function(data) {
         //add username
         console.log(data.username+" has joined the room.");
-        rtc.usernames[data.socketId] = data.username;
+        rtc.usernames[data.socketId] = sanitize(data.username);
         
         //add socket and create streams
         rtc.connections.push(data.socketId);

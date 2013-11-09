@@ -341,13 +341,13 @@ function download_file(id) {
 }
 
 /* cancel incoming file */
-function cancel_file(id, username) {
+function cancel_file(id) {
 	this.downloading[id] = false; /* deny file info from user */
 	delete_file(id);
 	this.recieved_meta[id].chunks_recieved = 0;
 	this.recieved_chunks[id] = []; //clear out our chunks
 	/* create a new download link */
-	create_pre_file_link(this.recieved_meta[id], id, username);
+	create_pre_file_link(this.recieved_meta[id], id, rtc.usernames[id]);
 }
 
 /* creates an entry in our filelist for a user, if it doesn't exist already - TODO: move this to script.js? */
@@ -370,7 +370,7 @@ function create_or_clear_container(id, username) {
 			a.textContent = '[c]';
 			a.draggable = true;
 			//onclick, cancel!
-			a.setAttribute('onclick','javascript:cancel_file("' + id + '","' + username + '");');
+			a.setAttribute('onclick','javascript:cancel_file("' + id + '");');
 			//append link!
 			filecontainer.appendChild(a);
 		} else {
@@ -521,7 +521,7 @@ function create_file_link (meta, id, username, fileEntry) {
 	can.textContent = '[d]';
 	can.draggable = true;
 	//onclick, cancel!
-	can.setAttribute('onclick','javascript:cancel_file("' + id + '","' + username + '");');
+	can.setAttribute('onclick','javascript:cancel_file("' + id + '");');
 	//append link!
 	filecontainer.appendChild(can);
 	
