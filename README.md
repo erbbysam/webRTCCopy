@@ -37,6 +37,22 @@ That's it!
 ### LICENSE 
 Copyright (C) 2013 [Samuel Erb] (http://erbbysam.com)
 
-This work is licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License] (http://creativecommons.org/licenses/by-sa/3.0/deed.en_US).
+    webRTCCopy is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    webRTCCopy is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+http://www.tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
+
+Prior to 11/9/2013 this work was licensed under a [Creative Commons Attribution-ShareAlike 3.0 Unported License] (http://creativecommons.org/licenses/by-sa/3.0/deed.en_US).
+This is an incorrect license to use for a software project (see https://github.com/erbbysam/webRTCCopy/issues/9 ).
 
 Originally based on [webrtc.io-demo] (https://github.com/webRTC/webrtc.io-demo) developed by: @dennismatensson @cavedweller @sarenji
