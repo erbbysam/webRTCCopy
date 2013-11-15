@@ -2,23 +2,23 @@
 /***************
 	ROOM INIT & functionality
 	
-		Copyright 2013 Samuel Erb
-	
+	Copyright 2013 Samuel Erb
+
 	This file is part of webRTCCopy.
 
-    webRTCCopy is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	webRTCCopy is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    webRTCCopy is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	webRTCCopy is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with webRTCCopy.  If not, see <http://www.gnu.org/licenses/>.
-	
+	You should have received a copy of the GNU General Public License
+	along with webRTCCopy.  If not, see <http://www.gnu.org/licenses/>.
+
 	http://www.tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
 	
 ****************/
@@ -37,13 +37,6 @@ var encryption_key = "";
 
 /* intro function */
 initRTCCopy();
-
-/* Chrome 31 does not work right now :( */
-function display_31_error() {
-	if ($.browser.name == "chrome" && ($.browser.versionNumber < 32) ) {
-		boot_alert('Due to a bug in your browser, this website will not work, sorry. Please try Firefox 24+ or Chrome Canary 32+.');
-	}
-}
 
 function display_error() {
 	/* REQUIRED SCTP data channels behind flag in 29 & 30 */
@@ -122,9 +115,6 @@ function initRTCCopy() {
 			location.reload();
 		});
 	}
-	
-	/* TODO - somewhat temporary - alert about SCTP bug in pre-canary Chrome browsers */
-	display_31_error();
 	
 	/* let's run a quick check before we begin to make sure we have rtc datachannel support */
 	var rtc_status = rtc.checkDataChannelSupport();
@@ -208,13 +198,13 @@ function systemMessage(msg) {
 function sanitize(msg) {
   msg = msg.toString();
   return msg.replace(/[\<\>"'\/]/g,function(c) {  var sanitize_replace = {
-													"<" : "&lt;",
-													">" : "&gt;",
-													'"' : "&quot;",
-													"'" : "&#x27;",
-													"/" : "&#x2F;"
-												}
-												return sanitize_replace[c]; });
+		"<" : "&lt;",
+		">" : "&gt;",
+		'"' : "&quot;",
+		"'" : "&#x27;",
+		"/" : "&#x2F;"
+	}
+	return sanitize_replace[c]; });
 }
 
 /* WebRTC functionality */
