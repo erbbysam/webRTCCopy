@@ -34,7 +34,7 @@ this.numOfChunksInFile = 10; /* set to some arbitrarily low number for right now
 
 function get_chunk_size() {
 	if (is_chrome) {
-		/* chrome can only queue up a smaller packet. This is the only way atm I can see to garuntee
+		/* chrome can only queue up a smaller packet. This is the only way atm I can see to guarantee
 		   SCTP queue is empty before trying to send again (SCTP queue being too full results in 
 		   failure to send). */
 		 
