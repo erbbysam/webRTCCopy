@@ -225,6 +225,7 @@ input[type="file"] {
 
 .support {
   color:rgb(179, 47, 47);
+  display:none;
 }
 
 .connect-btn {

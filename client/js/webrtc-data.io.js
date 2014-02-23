@@ -229,11 +229,7 @@ function sanitize(msg) {
 		  rtc.usernames[i] = sanitize(rtc.usernames[i]);
 		}
 		
-		/* Display warning about room we are entering, only do so for browser name (browser version seems less important atm) */
-		if (data.browser != browser_name) {
-			boot_alert("Warning!\nThe room you are entering was started by someone with a different browser. You should always match browsers (for now) and try to match major version number:\nYou: " + browser_name + " " + browser_ver + "\nRoom Creator: " + sanitize(data.browser) + " " + sanitize(data.browserVer) + "\n\nTrying to connect now!");
-		}
-		
+		/* Display warning about room we are entering */
 		if (data.encryption != encryption_type) {
 			boot_alert("Warning!\n The room you are entering was started by someone with a different encryption type.\nYou: "+encryption_type+"\nRoom creator: "+sanitize(data.encryption));
 		}

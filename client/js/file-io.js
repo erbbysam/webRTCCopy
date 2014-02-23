@@ -27,47 +27,69 @@ window.requestFileSystem = window.requestFileSystem ||
                            window.webkitRequestFileSystem;
 window.URL = window.URL || window.webkitURL;
 
+/* event delegation 
+ * -we need to do this to form a chrome app - see https://developer.chrome.com/extensions/contentSecurityPolicy#H2-3
+ * -huge thanks to http://stackoverflow.com/questions/13142664/are-multiple-elements-each-with-an-addeventlistener-allowed 
+ */
+function fileEventHandler(e)
+{
+	e = e || window.event;
+	var target = e.target || e.srcElement;
+	if (target.id.search('-download') != -1) {
+		download_file(target.id.replace("-download", ""));
+	} else if (target.id.search('-cancel') != -1) {
+		cancel_file(target.id.replace("-cancel", ""));
+	} else if (target.id == 'upload_stop') {
+		upload_stop();
+	}
+}
+document.body.addEventListener('click',fileEventHandler,false);
+
 /* sending functionality, only allow 1 file to be sent out at a time */
 this.chunks = {};
 this.meta = {};
-this.numOfChunksInFile = 10; /* set to some arbitrarily low number for right now */
+this.filesysteminuse = false;
+this.FSdebug = false;
+this.chunksPerACK = 16; /* 16k * 16 = 256k (buffer size in Chrome & seems to work 100% of the time) */
 
-function get_chunk_size() {
-	if (is_chrome) {
-		/* chrome can only queue up a smaller packet. This is the only way atm I can see to garuntee
-		   SCTP queue is empty before trying to send again (SCTP queue being too full results in 
-		   failure to send). */
-		 
-		 if (encryption_type != "NONE") {
-			/* encrypted size - expands after base64 conversion neccessary for RC4Drop cipher */
-			return 30000;
-		} else {
-			/* no encryption size */
-			
-			return 100000; /* this seems to maximize our TPut without causing failure :) - https://code.google.com/p/webrtc/issues/detail?id=2270 */
-		}
+
+/*
+ * Maximum chunk size is currently limited to 16k.
+ *
+ * For those who care:
+ * - JS should not have to handle chunking passed keeping the browser responsive. 
+ * - There should be no sending size limit.
+ *
+ *	see:
+ *		https://code.google.com/p/webrtc/issues/detail?id=2270#c35
+ *		https://code.google.com/p/webrtc/issues/detail?id=2279#c18
+ *		http://tools.ietf.org/html/draft-ietf-rtcweb-data-channel-07#section-6.6
+ */
+function get_chunk_size(me, peer) {
+
+	if (encryption_type != "NONE") {
+		/* Encryption will base64 the binary array for encryption */
+		return 4000; //binary->base64 3(16k)/4
 	} else {
-		/* We don't want to make this infinite b/c we don't want to risk crashing the sending browser by loading a huge arraybuffer into memory.
-		 * This is espcially true on the FF recieving side as well b/c filesystem is not supported there so we can't write to file :( 
-		 * Also, the browser kind of hangs when sending a huge file.
-		 */
-		return 1000000; /* ~1MB - FF can support larger transfers now :) */
+		/* No encryption used, maximum ->Chrome transfer size */
+		return 16000;
 	}
-}
 
-this.timeout = 1000; /* time before resending request for next chunk */
-this.chunk_time_between = 100; /* UNSUPPORTED currently it appears - time between checking if chunk has emptied out of sctp data queue */
+}
 
 /* Used in Chrome to handle larger files (and firefox with idb.filesystem.js) */
 window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
 var file_to_upload;    /* "pointer" to external file */
-var fs = [];           /* hold our filesystems for download files (Chrome only atm) */
-var saved_fileEntry = []; /* holds temporary fileEntry's during last encryption hash check */
 
-/* recieving functionality, allow multiple at the same time! */
-this.downloading = [];
-this.recieved_chunks = []; //not currently used
-this.recieved_meta = [];
+/* recieving functionality, values stored per user id */
+var fs = [];  /* hold our filesystems for download files */
+var saved_fileEntry = []; /* holds temporary fileEntry's during last encryption hash check */
+this.downloading = []; /* downloading or not */
+this.recieved_meta = []; /* the file meta data other users send over */
+this.recievedChunks = []; /* store the chunks in memory before writing them to filesystem */
+this.recievedChunksWritePointer = []; /* stores the # of the next chunk to be written to the filesystem */
+this.createdChunksWritePointer = []; /* true if the file has been created*/
+this.requestedChunksWritePointer = []; /* stores the value of the next chunk to be requested */
 
 
 /* stop the uploading! */
@@ -92,29 +114,78 @@ function upload_stop() {
 }
 
 /* write a peice of a file to a file on the filesystem... allows for unlimited file size!
- * FF does have a limitation in that we cannot load files directly out of idb.filesystem.js, we must first load them into RAM :(
+ * FF does have a limitation in that we cannot load files directly out of idb.filesystem.js, we must first load them into memory :(
  */
 function write_to_file(user_id, user_username, chunk_data, chunk_num, hash) {
-/* massive thanks to http://stackoverflow.com/questions/10720704/filesystem-api-upload-from-local-drive-to-local-filesystem */
+
+	/* encrypted packets are sent one at a time and hashed on the remote end */
+	if (encryption_type != "NONE") {
+		this.chunksPerACK = 1;
+	}
+
+	/* store our chunk temporarily in memory */
+	this.recievedChunks[user_id][chunk_num % chunksPerACK] = chunk_data;
+	
+	/* once done recieving all chunks for this ack, start writing to memory */
+	if (chunk_num %chunksPerACK == (chunksPerACK-1) || recieved_meta[user_id].numOfChunksInFile == (chunk_num+1)) {
+		store_in_fs(user_id, user_username, hash);
+	}
+}
+
+/* only called by write_to_file */
+function store_in_fs(user_id, user_username, hash) {
+	
+	/* massive thanks to http://stackoverflow.com/questions/10720704/filesystem-api-upload-from-local-drive-to-local-filesystem */
+	if (createdChunksWritePointer[user_id] == false) {
+		options = { create: true };
+		createdChunksWritePointer[user_id] = true;
+	} else {
+		options = { create: false };
+	}
+	
 	fs[user_id].root.getFile(
 		this.recieved_meta[user_id].name,
-		{ create: true },
+		options,
 		function(fileEntry) {
-			// create a writer that can put data in the file
+			/* create a writer that can put data in the file */
 			fileEntry.createWriter(function(writer) {
+			
+				/* once we have written all chunks per ack */
 				writer.onwriteend = function() {
-					// request the next chunk
-					request_chunk(user_id, chunk_num+1, hash);
+
+					/* request the next chunk */
+					recievedChunks[user_id] = [];
+					requestedChunksWritePointer[user_id] += chunksPerACK;
+
+					if (recieved_meta[user_id].numOfChunksInFile > recievedChunksWritePointer[user_id]) {
+						request_chunk(user_id, recievedChunksWritePointer[user_id], hash);
+					}
 				};
+				
 				writer.onerror = FSerrorHandler;
 
-				// this will read the contents of the current file
-				var builder = new Blob([chunk_data], [this.recieved_meta[user_id].type]);
-				writer.seek(chunk_num * get_chunk_size());
-				//console.log('recived: '+_arrayBufferToBase64(chunk_data));
+				/* build the blob based on the binary array this.recievedChunks[user_id] */
+				var builder = new Blob(this.recievedChunks[user_id], [this.recieved_meta[user_id].type]);
+				
+				/* debug */
+				if (FSdebug) {
+					console.log("DEBUG: writing chunk2 "+ recievedChunksWritePointer[user_id]);
+					for (i=0;i<this.chunksPerACK;i++) {
+						if (recievedChunks[user_id][i]) {
+							console.log('recived: '+CryptoJS.SHA256(_arrayBufferToBase64(recievedChunks[user_id][i])).toString(CryptoJS.enc.Base64));
+						}
+					}
+				}
+				
+				/* write the blob to the file, this can only be called once! Will fail silently if called while writing! We avoid this by only writing once per ack. */
+				var seek = recievedChunksWritePointer[user_id] * get_chunk_size($.browser.name, recieved_meta[user_id].browser);
+				writer.seek(seek);
 				writer.write(builder);
-				if (recieved_meta[user_id].numOfChunksInFile == (chunk_num + 1)) {
-					console.log("done downloading file!");
+				recievedChunksWritePointer[user_id] += chunksPerACK;
+				
+				/* EOF condition */
+				if (recieved_meta[user_id].numOfChunksInFile <= (recievedChunksWritePointer[user_id])) {
+					console.log("creating file link!");
 						
 					/* stop accepting file info */
 					this.downloading[user_id] = false;
@@ -122,7 +193,7 @@ function write_to_file(user_id, user_username, chunk_data, chunk_num, hash) {
 					/* on encrypted completion here, send hash back to other user who verifies it, then sends the OK to finish back */
 					if (encryption_type != "NONE") {
 						saved_fileEntry[user_id] = fileEntry;
-						request_chunk(user_id, chunk_num+1, hash); /* this chunk doesn't exist, but we need the hash of the last chunk to be verified */
+						request_chunk(user_id, recievedChunksWritePointer[user_id], hash); /* this chunk doesn't exist, but we need the hash of the last chunk to be verified */
 					} else {
 						if (is_chrome) {
 							create_file_link (recieved_meta[user_id], user_id, user_username, fileEntry);
@@ -138,17 +209,6 @@ function write_to_file(user_id, user_username, chunk_data, chunk_num, hash) {
 		}, FSerrorHandler);
 }
 
-/* delete a file - should be called when cancel is requested or kill is called */
-function delete_file(user_id) {
-	if (fs[user_id]) {
-		fs[user_id].root.getFile(this.recieved_meta[user_id].name, {create: false}, function(fileEntry) {
-			fileEntry.remove(function() {
-				console.log('File removed.');
-			}, FSerrorHandler);
-		}, FSerrorHandler);
-	}
-	
-}
 
 /* process local inbound files */
 function process_inbound_files(file) {
@@ -158,8 +218,7 @@ function process_inbound_files(file) {
 	this.meta.name = file.name;
 	this.meta.size = file.size;
 	this.meta.filetype = file.type;
-	this.numOfChunksInFile = Math.ceil(file.size / get_chunk_size());
-	this.meta.numOfChunksInFile = numOfChunksInFile;
+	this.meta.browser = $.browser.name; /* need browser name to set chunk size */
 	console.log(this.meta);
 	
 	send_meta();
@@ -195,23 +254,6 @@ function accept_inbound_files() {
 	}, false);
 }
 
-function send_chunk_if_queue_empty(id, chunk_num, rand, hash) {
-	
-	if ( chunk_num > this.meta.numOfChunksInFile) { /* allow numOfChunksInFile+1 in for last encrpytion hash verification */
-		return;
-	}
-	
-	/* we have to wait for the sctp buffer to clear out */
-	if (rtc.dataChannels[id].bufferedAmount == 0) {
-		sendchunk(id, chunk_num, rand, hash);
-		//setTimeout(send_chunk_if_queue_empty(id, chunk_num + 1), this.chunk_time_between);
-	} else {
-		/* if this was supported, we wouldn't have to do this by waiting for the other side to send us back notificaiton */
-		console.log("Waiting to send, bufferedAmount = ".rtc.dataChannels[id].bufferedAmount);
-		setTimeout(function(){send_chunk_if_queue_empty(id, chunk_num, rand, hash);}, this.chunk_time_between);
-	}
-}
-
 
 /* inbound - recieve binary data (from a file)
  * we are going to have an expectation that these packets arrive in order (requires reliable datachannel)
@@ -220,48 +262,24 @@ function process_binary(id,message,hash) {
 	if (!this.downloading[id]) {
 		return;
 	}
-
-	if (0) { 
-		//THIS IS DEAD CODE - it is used to save chunks into an array, something we don't have to do anymore!
-		// save it 
-		/*this.recieved_chunks[id][this.recieved_chunks[id].length] = message; // save it as a uint8Array so we can easily convert it to a blob later :)
-		
-		// request next if we have to 
-		if (this.recieved_meta[id].numOfChunksInFile > this.recieved_chunks[id].length) {
-			// update the cointainer %
-			update_container_percentage(id, rtc.usernames[id], this.recieved_chunks[id].length - 1, this.recieved_meta[id].numOfChunksInFile, this.recieved_meta[id].size);
-			request_chunk(id, this.recieved_chunks[id].length);
-		} else {
-			console.log("done downloading file!");
-			// stop accepting file info 
-			this.downloading[id] = false;
-			// now combine the chunks and form a link! - only if not chrome 
-			for (var i = 0; i < this.recieved_meta[id].numOfChunksInFile; i++) {
-				if (this.recieved_chunks[id][i] == ''){
-					console.log("missing chunk! " + i);
-				} 
-				this.recieved_chunks[id][i] = new Uint8Array(this.recieved_chunks[id][i]);
-
-			}
-			
-			//let's not pass around this.recieved_chunks so we avoid replicating large arrays by accident 
-			create_file_link (this.recieved_meta[id], id, rtc.usernames[id]);
-		} */
+	
+	if (this.FSdebug) {
+		console.log("processing chunk # " + this.recieved_meta[id].chunks_recieved);
+	}
+	
+	/* We can write to a file using FileSystem! Chrome has native support, FF uses idb.filesystem.js library */
+	/* Note that decrypted file packets are passed here by file_decrypt, we don't have to do any decryption here */
+	
+	write_to_file(id, rtc.usernames[id], message, this.recieved_meta[id].chunks_recieved, hash);
+	this.recieved_meta[id].chunks_recieved++;
+	
+	if (this.recieved_meta[id].numOfChunksInFile > this.recieved_meta[id].chunks_recieved) {
+		update_container_percentage(id, rtc.usernames[id], this.recieved_meta[id].chunks_recieved - 1, this.recieved_meta[id].numOfChunksInFile, this.recieved_meta[id].size);
 	} else {
-		/* We can write to a file using FileSystem! Chrome has native support, FF uses idb.filesystem.js library */
-		/* Note that decrypted file packets are passed here by file_decrypt, we don't have to do any decryption here */
-		
-		write_to_file(id, rtc.usernames[id], message, this.recieved_meta[id].chunks_recieved, hash);
-		this.recieved_meta[id].chunks_recieved++;
-		
-		if (this.recieved_meta[id].numOfChunksInFile > this.recieved_meta[id].chunks_recieved) {
-			update_container_percentage(id, rtc.usernames[id], this.recieved_meta[id].chunks_recieved - 1, this.recieved_meta[id].numOfChunksInFile, this.recieved_meta[id].size);
-		} else {
-			console.log("done downloading file!");
-			/* stop accepting file info */
-			this.downloading[id] = false;
-			/* creating the download link is handled by write_to_file */
-		}
+		console.log("done downloading file!");
+		/* stop accepting file info */
+		this.downloading[id] = false;
+		/* creating the download link is handled by write_to_file */
 	}
 }
 
@@ -275,10 +293,8 @@ function process_data(data) {
 	
 		/* if it contains file_meta, must be meta data! */
 		this.recieved_meta[data.id] = data.file_meta;
+		this.recieved_meta[data.id].numOfChunksInFile = Math.ceil(this.recieved_meta[data.id].size / get_chunk_size(this.recieved_meta[data.id].browser, $.browser.name));
 		this.recieved_meta[data.id].name = sanitize(this.recieved_meta[data.id].name);
-		
-		//console.log(this.recieved_meta[data.id]);
-		this.recieved_chunks[data.id] = []; //clear out our chunks
 		
 		/* we are not downloading anymore if we just got meta data from a user
 		 * call to create_pre_file_link is reliant on this to not display [c] button on new file information
@@ -291,13 +307,16 @@ function process_data(data) {
 		create_pre_file_link(this.recieved_meta[data.id], data.id, data.username);
 		
 		/* if auto-download, start the process */
+		/* removed feature
 		if ($("#auto_download").prop('checked')) {
 			download_file(data.id);
 		}
+		*/
+		
+		console.log(this.recieved_meta[data.id]);
 	} else if (data.kill) {
 		/* if it is a kill msg, then the user on the other end has stopped uploading! */
 		
-		this.recieved_chunks[data.id] = []; //clear out our chunks
 		this.downloading[data.id] = false;
 		delete_file(data.id);
 		if (this.recieved_meta[data.id]) {
@@ -317,21 +336,32 @@ function process_data(data) {
 			});
 		}
 	} else {
-		/* otherwise, we are going to assume that if we have reached here, this is a request to download our file */
-		
-		send_chunk_if_queue_empty(data.id, data.chunk, data.rand, data.hash);
+		/* encrypted packets are sent one at a time and hashed on the remote end */
+		if (encryption_type != "NONE") {
+			this.chunksPerACK = 1;
+		}
+
+		/* Otherwise, we are going to assume that if we have reached here, this is a request to download our file */
+		if (data.chunk % this.chunksPerACK == 0) {
+			for (i=0;i<this.chunksPerACK;i++) {
+				send_chunk_if_queue_empty(data.id, data.chunk + i, data.browser, data.rand, data.hash);
+			}
+		}
 	}
 }
 
 /* request chunk # chunk_num from id, at this point just used to request the first chunk */
 function request_chunk(id, chunk_num, hash) {
-	//console.log("requesting chunk " + chunk_num + " from " + id);
+	if (this.FSdebug) {
+		console.log("DEBUG: requesting chunk " + chunk_num + " from " + id);
+	}
 	if (encryption_type != "NONE") {
 		request_chunk_decrypt_rand[id] = generate_second_half_RC4_random();
 		dataChannelChat.send(id, JSON.stringify({
 			"eventName": "request_chunk",
 			"data": {
 				"chunk": chunk_num,
+				"browser": $.browser.name,
 				"rand": request_chunk_decrypt_rand[id],
 				"hash": hash
 			}
@@ -340,7 +370,8 @@ function request_chunk(id, chunk_num, hash) {
 		dataChannelChat.send(id, JSON.stringify({
 			"eventName": "request_chunk",
 			"data": {
-				"chunk": chunk_num
+				"chunk": chunk_num,
+				"browser": $.browser.name
 			}
 		}));
 	}
@@ -349,13 +380,44 @@ function request_chunk(id, chunk_num, hash) {
 /* request id's file by sending request for block 0 */
 function download_file(id) {
 
-	window.requestFileSystem(window.TEMPORARY, this.recieved_meta[id].size, function(filesystem) {
-		fs[data.id] = filesystem;
+	/* event listeners or javascript can call us, if id isn't set, must have been an event listener */
+	/*if (typeof id == 'object') {
+		var str = id.target.id;
+		id = str.replace("-download", "");
+	}*/
+
+	/* We can't request multiple filesystems or resize it at this time. Avoiding hacking around this ATM
+	 * and will instead display warning that only 1 file can be downloaded at a time :(
+	 */
+	 if (filesysteminuse) {
+		boot_alert("Sorry, but only 1 file can be downloaded or stored in browser memory at a time, please [c]ancel or [d]elete the other download and try again.");
+		return;
+	}
+
+	window.requestFileSystem(window.TEMPORARY, recieved_meta[id].size, function(filesystem) {
+		fs[id] = filesystem;
+		filesysteminuse = true;
 		downloading[id] = true; /* accept file info from user */
 		request_chunk(id, 0, 0);
 	});
 	
-	this.recieved_meta[id].chunks_recieved = 0;
+	recieved_meta[id].chunks_recieved = 0;
+	recievedChunksWritePointer[id] = 0;
+	createdChunksWritePointer[id] = false;
+	requestedChunksWritePointer[id] = 0;
+	recievedChunks[id] = [];
+}
+
+/* delete a file - should be called when cancel is requested or kill is called */
+function delete_file(user_id) {
+	if (fs[user_id]) {
+		this.filesysteminuse = false;
+		fs[user_id].root.getFile(this.recieved_meta[user_id].name, {create: false}, function(fileEntry) {
+			fileEntry.remove(function() {
+				console.log('File removed.');
+			}, FSerrorHandler);
+		}, FSerrorHandler);
+	}
 }
 
 /* cancel incoming file */
@@ -363,7 +425,6 @@ function cancel_file(id) {
 	this.downloading[id] = false; /* deny file info from user */
 	delete_file(id);
 	this.recieved_meta[id].chunks_recieved = 0;
-	this.recieved_chunks[id] = []; //clear out our chunks
 	/* create a new download link */
 	create_pre_file_link(this.recieved_meta[id], id, rtc.usernames[id]);
 }
@@ -387,8 +448,6 @@ function create_or_clear_container(id, username) {
 			a.style.cssText = 'color:red;';
 			a.textContent = '[c]';
 			a.draggable = true;
-			//onclick, cancel!
-			a.setAttribute('onclick','javascript:cancel_file("' + id + '");');
 			//append link!
 			filecontainer.appendChild(a);
 		} else {
@@ -413,6 +472,9 @@ function remove_container(id) {
 	if (filecontainer) {
 		filecontainer.remove();
 	}
+	if (fs[id]) {
+		delete_file(id);
+	}
 }
 
 /* create a link that will let the user start the download */
@@ -433,9 +495,6 @@ function create_upload_stop_link(filename, id, username) {
 	a.textContent = '[stop upload]';
 	a.style.cssText = 'color:red;';
 	a.draggable = true;
-	
-	//onclick, download the file! 
-	a.setAttribute('onclick','javascript:upload_stop();');
 	
 	//append link!
 	filecontainer.appendChild(span);
@@ -459,9 +518,6 @@ function create_pre_file_link(meta, id, username) {
 	a.href = 'javascript:void(0);';
 	a.textContent = 'download ' + meta.name + ' ' + getReadableFileSizeString(meta.size);
 	a.draggable = true;
-	
-	//onclick, download the file! 
-	a.setAttribute('onclick','javascript:download_file("' + id + '");');
 	
 	//append link!
 	filecontainer.appendChild(span);
@@ -538,8 +594,6 @@ function create_file_link (meta, id, username, fileEntry) {
 	can.style.cssText = 'color:red;';
 	can.textContent = '[d]';
 	can.draggable = true;
-	//onclick, cancel!
-	can.setAttribute('onclick','javascript:cancel_file("' + id + '");');
 	//append link!
 	filecontainer.appendChild(can);
 	
@@ -571,12 +625,26 @@ function send_meta(id) {
 	}
 }
 
-/* Please note that this works by sending a chunk, then waiting for a request for the next one */
-function sendchunk(id, chunk_num, rand, hash) {
-	/* uncomment the following lines and set breakpoints on them to similar an impaired connection */
+/* ideally we would check the SCTP queue here to see if we could send, doesn't seem to work right now though... */
+function send_chunk_if_queue_empty(id, chunk_num, other_browser, rand, hash) {
+	if (encryption_type != "NONE") {
+		if ( chunk_num > Math.ceil(file_to_upload.size / get_chunk_size($.browser.name, other_browser))) { /* allow numOfChunksInFile+1 in for last encrpytion hash verification */
+			return;
+		}
+	} else {
+		if ( chunk_num >= Math.ceil(file_to_upload.size / get_chunk_size($.browser.name, other_browser))) {
+			return;
+		}
+	}
+	
+	sendchunk(id, chunk_num, other_browser, rand, hash);
+}
+
+/* Please note that this works by sending one chunk per ack */
+function sendchunk(id, chunk_num, other_browser, rand, hash) {
+	/* uncomment the following lines and set breakpoints on them to simulate an impaired connection */
 	/* if (chunk_num == 30) { console.log("30 reached, breakpoint this line");}
 	if (chunk_num == 50) { console.log("30 reached"); }*/
-	//console.log("sending chunk " + chunk_num + " to " + id);
 	
 	/* need to check hash of previous encrpytion if received */
 	if (encryption_type != "NONE") {
@@ -598,7 +666,7 @@ function sendchunk(id, chunk_num, rand, hash) {
 		 * we just did that above, so we can safely send back an OK to download back now!
 		 * RETURN here so that we don't try an invalid file access.
 		 */
-		if (this.meta.numOfChunksInFile == chunk_num ) {
+		if (Math.ceil(file_to_upload.size / get_chunk_size($.browser.name, other_browser)) == chunk_num ) {
 			//console.log("last chunk verification observed, sending OK to download");
 			dataChannelChat.send(id, JSON.stringify({
 				"eventName": "ok_to_download",
@@ -611,17 +679,21 @@ function sendchunk(id, chunk_num, rand, hash) {
 	}
 
 	var reader = new FileReader;
-	var upper_limit = (chunk_num + 1) * get_chunk_size();
+	var upper_limit = (chunk_num + 1) * get_chunk_size(other_browser, $.browser.name);
 	if (upper_limit > this.meta.size) { upper_limit = this.meta.size; }
 	
-	var blob = file_to_upload.slice(chunk_num * get_chunk_size(), upper_limit);
+	var seek = chunk_num * get_chunk_size(other_browser, $.browser.name);
+	var blob = file_to_upload.slice(seek, upper_limit);
 	reader.onload = function(event) { 
 		if (reader.readyState == FileReader.DONE) {
-			//console.log('sending: '+chunk_num);
 			
 			if (encryption_type != "NONE") {
-				msg = file_encrypt_and_send(id, event.target.result, rand, chunk_num);
+				file_encrypt_and_send(id, event.target.result, rand, chunk_num);
 			} else {
+				if (FSdebug) {
+					console.log("DEBUG: sending chunk "+ chunk_num);
+					console.log('sending: '+CryptoJS.SHA256(_arrayBufferToBase64(event.target.result)).toString(CryptoJS.enc.Base64));
+				}
 				dataChannelChat.send(id, event.target.result);
 			}
 		}
@@ -656,4 +728,15 @@ function FSerrorHandler(e) {
       break;
   };
   console.error('Error: ' + msg);
+}
+
+//used for debugging - credit - http://stackoverflow.com/questions/9267899/arraybuffer-to-base64-encoded-string
+function _arrayBufferToBase64( buffer ) {
+    var binary = ''
+    var bytes = new Uint8Array( buffer )
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] )
+    }
+    return window.btoa( binary );
 }

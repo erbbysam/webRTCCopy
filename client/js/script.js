@@ -75,11 +75,17 @@ function initRTCCopy() {
 	/* handle crypto type input */
 	$("#encryption_type").change(function() {
 		if (document.getElementById("encryption_type").value == "NONE") {
+			$("#encryption_note").hide();
 			$("#encryption_key").hide();
 		} else {
+			$("#encryption_note").show();
 			$("#encryption_key").show();
 		}
 	});
+	
+	if ($.browser.name != "chrome" && $.browser.name != "firefox") {
+		$(".support").show();
+	}
 	
 	/* handle & intercept connect button/form submission */
 	document.getElementById('webrtc_input_form').addEventListener("submit", function(event) {
@@ -123,23 +129,25 @@ function initRTCCopy() {
 	}
 }
 
-/* handles the processing of the room state on the username page */
+/* handles the processing of the room state on the username page
+ * -at this point we can assume all Chrome(Opera shows up as "Chrome") & Firefox versions can get along
+ * -just throw an error if we dectect another browser
+ */
 function process_room_state(data) {
 	if (data.browser != "") { /* will be blank if new room */
 		var browser_color = 'red';
-		var browserVer_color = 'rgb(195, 196, 0)'; /* not super important that versions match */
-		if (browser_name == data.browser) { browser_color = 'green'; } else { browserVer_color = 'red'; }
-		if (browser_ver == data.browserVer) { browserVer_color = 'green'; }
+		if ((browser_name == "chrome" || browser_name == "firefox") && (data.browser == "chrome" || data.browser == "firefox")) { browser_color = 'green'; }
 		
 		if (data.encryption == "NONE") {
-			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ sanitize(data.browser) + '</span> <span style="color:'+browserVer_color+'">' + sanitize(data.browserVer) + '</span> without OTR.<br /><br />');
+			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ sanitize(data.browser) + '</span> <span style="color:'+browser_color+'">' + sanitize(data.browserVer) + '</span> without OTR.<br /><br />');
 		} else {
-			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ sanitize(data.browser) + '</span> <span style="color:'+browserVer_color+'">' + sanitize(data.browserVer) + '</span> with OTR encryption.<br /><br />');
+			$("#room_state").append('This room already exists and the creator used:<br /> <span style="color:'+browser_color+'">'+ sanitize(data.browser) + '</span> <span style="color:'+browser_color+'">' + sanitize(data.browserVer) + '</span> with OTR encryption.<br /><br />');
 		}
 		
 		/* set the dropdown box to default to the encryption value */
 		$("#encryption_type").val(data.encryption);
 		if (document.getElementById("encryption_type").value != "NONE") {
+			$("#encryption_note").show();
 			$("#encryption_key").show();
 		}
 		
@@ -318,7 +326,7 @@ function init() {
 	  
 	  /* add Room Name */
 	  var roomname = document.getElementById('roomname');
-	  roomname.innerHTML = 'Room: ' + sanitize(room);
+	  roomname.innerHTML = sanitize(room);
   }
 }
 
@@ -375,14 +383,10 @@ function packet_inbound(id, message) {
 		//console.log('recieved arraybuffer!');
 		process_binary(id,message,0); /* no reason to hash here */
 	} else {
-		
-	
 		data = JSON.parse(message).data;
 		
 		data.id = id;
 		data.username = rtc.usernames[id]; /* username lookup */
-		
-		//console.log(data);
 		
 		/* pass data along */
 		if (data.messages) {

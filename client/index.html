@@ -10,7 +10,7 @@
 	<!-- jquery -->
     <script src="ext-js/jquery.js"></script>
     <script src="ext-js/jquery.browser.min.js"></script>
-	<script src="ext-js/base64-arraybuffer.js"></script><!--TODO - needed? -->
+	<script src="ext-js/base64-arraybuffer.js"></script><!--used for debugging -->
 	<script src="ext-js/idb.filesystem.min.js"></script>
 	<!-- OTR -->
 	<script src="ext-js/otr/salsa20.js"></script>
@@ -48,6 +48,7 @@
 		<div class="collapse navbar-collapse">
 		  <ul class="nav navbar-nav">
 			<li><a data-toggle="modal" href="#myModal">About</a></li>
+			<!--<li><a href="" target="_blank">Chrome App</a></li>-->
 			<li><a href="https://github.com/erbbysam/webRTCCopy" target="_blank">GitHub</a></li>
 		  </ul>
 		</div><!-- /.nav-collapse -->
@@ -58,8 +59,8 @@
 	<div id="roomprompt" style="display:none">
 		<div class="panel panel-default username-panel">
 			<div class="panel-body">
-				<div class="small">WebRTC enables Real Time Communication across the internet directly between web browsers.<br />
-				This website allows files of <i>any</i> size and messages to be transmitted <a href="white_paper.html" target="_blank">securely</a> over this protocol.
+				<div class="small">
+				This website allows files of <i>any</i> size and messages to be <a href="white_paper.html" target="_blank">securely</a> transmitted directly between web browsers.
 				</div><br />
 				<div class="frontpage_header">To get started create a new room:</div>
 				<span id="room_entry">
@@ -67,11 +68,11 @@
 						<input id="existing" type="text" placeholder="room name" value="" />
 						<button class="btn btn-lg btn-primary btn-block connect-btn" type="submit">create</button>
 					</form>
-					<br />
-					or<br /><div id="newRoom" class="btn btn-lg btn-primary btn-block connect-btn">generate a random room name</div><br />
+					or
+					<div id="newRoom" class="btn btn-lg btn-primary btn-block connect-btn">generate a random room name</div><br />
 				</span>
 				<br />
-				<span class='support'>Notice: only Google Chrome Canary & Mozilla Firefox are currently supported.</span>
+				<span class='support'>Notice: only Chrome, Firefox & Opera are currently supported.</span>
 			</div>
 		</div>
 	</div>
@@ -82,21 +83,22 @@
 				<form id="webrtc_input_form" class="form-signin">
 					<span class="small" id="room_state"></span>
 					<input id="username" type="text" class="form-control" placeholder="username" value="" autofocus>
-					<select id="encryption_type" class="form-control"><option value="NONE" selected>Do not use OTR</option><option value="OTR">Use OTR</option></select>
+					<select id="encryption_type" class="form-control"><option value="NONE" selected="selected">Do not use OTR</option><option value="OTR">Use OTR</option></select>
+					<span id="encryption_note" style="display:none;"><b>OTR does not add any security unless you trust this server</b>. You should fork this on your own server or download this as a chrome app.</span>
 					<input id="encryption_key" class="form-control"type="text" style="display:none;" placeholder="OTR password" value="" />
 					<button class="btn btn-lg btn-primary btn-block connect-btn" type="submit">connect</button>
 				</form>
 
-				This website allows files and messages to be securly transmitted directly between web browsers.<br />
-				If you did not create a new room, you were likely sent this link. <a href="http://www.rtccopy.com">Click here to create a new room.</a><br />
+				This website allows files of <i>any</i> size and messages to be <a href="white_paper.html" target="_blank">securely</a> transmitted directly between web browsers.<br />
+				If you did not create a new room, you were likely sent this link. <a href="/">Click here to create a new room.</a><br />
 				<br />
 				<span class="small">OTR details:<br /> 
-				We offer OTR encryption on top of the encryption your browser supports. If a pre-shared password is provided and you connect to others, their identity can be garunteed.<br />
+				We offer OTR encryption on top of the WebRTC encryption your browser supports. If a pre-shared password is provided and you connect to others, their identity can be guaranteed.<br />
 				Your OTR settings must match the other users in the room.<br/ >
 				<a href="white_paper.html" target="_blank">Click here for more details.</a><br /> 
 				</span>
 				<br />
-				<span class='support'>Notice: only Google Chrome Canary & Mozilla Firefox are currently supported.</span>
+				<span class='support'>Notice: only Chrome, Firefox & Opera are currently supported.</span>
 			</div>
 		</div>
 	</div>
@@ -107,10 +109,9 @@
 		
 			<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar">
 			  <div class="sidebar-nav panel panel-default">
-				<div class="panel-heading">User List:</div>
+				<div class="panel-heading"><span id="roomname"></span></div>
 				<div id="filelist" class="panel-body small">
-					<input type="checkbox" id="auto_download">Automatic download<br />
-					<span id="roomname"></span><br />
+					<!-- feature removed <input type="checkbox" id="auto_download">Automatic download<br /> -->
 					<span id="filelist_cointainer"></span>
 				</div>
 			  </div><!--/.well -->
@@ -119,7 +120,7 @@
 			<div class="col-xs-12 col-sm-9">
 				<div id="chatbox" class="panel panel-default">
 					<span class="visible-xs"><button type="button" class="btn btn-primary btn-xs btn_off" data-toggle="offcanvas">Toggle User List</button></span>
-					<div class="panel-heading">Drag files into the browser to upload to other users or <input type="file" id="select_file" name="select_file" class="small" /></div>
+					<div class="panel-heading">Drag files or <input type="file" id="select_file" name="select_file" class="small" /></div>
 					<div id="chatbox-panel" class="panel-body">
 						<div id="messages"></div>
 						<input id="chatinput" style="display:none;" type="text" placeholder="Message: <enter to send>"/>
@@ -158,7 +159,7 @@
 				<a href="white_paper.html" target="_blank">Implementation details can be found here</a>.<br />
 				<br />
 				<b>Notice</b><br />
-				You may not use this website for anything illegal or to share any material you do not have permission to share. While we have made every effort to garuntee the security of this site, the cryptographic implementation has not been independently verified, tested or audited. This website and it's owners do not assume any liability for use of this site. <br />
+				You may not use this website for anything illegal or to share any material you do not have permission to share. While we have made every effort to guarantee the security of this site, the cryptographic implementation has not been independently verified, tested or audited. This website and it's owners do not assume any liability for use of this site. <br />
 				<br />
 				<b>Privacy</b><br />
 				We do not save <i>any</i> file or chat information, nor do we have the ability to.<br />

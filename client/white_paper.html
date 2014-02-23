@@ -39,23 +39,26 @@
 			<span class="icon-bar"></span>
 			<span class="icon-bar"></span>
 		  </button>
-		  <span class="navbar-brand">WebRTC Copy</span>
+		  <a href="/"><span class="navbar-brand">WebRTC Copy</span></a>
 		</div>
 		<div class="collapse navbar-collapse">
 		  <ul class="nav navbar-nav">
 			<li><a data-toggle="modal" href="#myModal">About</a></li>
+			<!--<li><a href="" target="_blank">Chrome App</a></li>-->
 			<li><a href="https://github.com/erbbysam/webRTCCopy" target="_blank">GitHub</a></li>
 		  </ul>
 		</div><!-- /.nav-collapse -->
 	  </div><!-- /.container -->
      </div><!-- /.navbar -->
-<a href="https://rtccopy.com">Click here to return to the main page</a> <br />
+<a href="/">Click here to return to the main page</a> <br />
 <h3>Cryptology Details</h3>
 <div>
+WebRTC already mandates encryption over DTLS, and this website does not disable that functionality. However, <a href="http://chimera.labs.oreilly.com/books/1230000000545/ch18.html#_secure_communication_with_dtls">there is no authentication scheme 
+built into this DTLS implementation</a>.<br />
+<br />
 While <a href="http://www.matasano.com/articles/javascript-cryptography/" target="_blank">javascript cryptology is less than ideal in the browser</a>, 
 this website uses OTR(or Off The Record) in order to add an additional layer of security, as well as verify the authorization of the other users in the 
-RTCCopy.com room. WebRTC already mandates encryption over DTLS, and this website does not disable that functionality. However, <a href="http://chimera.labs.oreilly.com/books/1230000000545/ch18.html#_secure_communication_with_dtls">there is no authentication scheme 
-built into this DTLS implementation</a>.<br />
+rtccopy.com room. <br />
 <br />
 How does OTR verify identity of other users?<br />
 OTR offers a feature called <a href="http://en.wikipedia.org/wiki/Socialist_millionaire" target="_blank">SMP</a> which, once an OTR connection has been 
@@ -77,10 +80,10 @@ OK, so how is OTR implemented?<br />
 When OTR is enabled:<br />
 - We use OTR's SMP in order to verify password both parties entered is the same.<br />
 - Everything besides file data is sent & received  over the OTR channel (that includes messages & file meta data) only after SMP is successful.<br />
-- A quick note about file transfers - a user requests a single chunk at a time, when OTR is enabled that also contains a nonce and a hash of the previous chunk<br />
-- File data is encrypted using Rabbit(stream cipher) with a shared random secret negotiated during OTR setup + the nonce received in the chunk request. This is done for speed as the OTR channel would create a bottleneck.<br />
-- The sender receives the hash from the previous chunk and verifies that. If it does not match, the sender stops the download<br />
-- to reiterate - ALL information (besides Rabbit'd file data) is sent over the OTR channel<br />
+- A quick note about file transfers - with OTR enabled, a user requests a single chunk at a time, that request also contains a nonce and a hash of the previous chunk.<br />
+- File data is encrypted using Rabbit(stream cipher) with a shared random secret negotiated during OTR setup + the nonce received in the chunk request. This is done for speed as the OTR channel would create a more significant bottleneck with a slower cipher (ie. AES).<br />
+- The sender receives the hash from the previous chunk and verifies that. If it does not match, the sender stops the download.<br />
+- to reiterate - ALL information (besides Rabbit'd file data) is sent over the OTR channel.<br />
 OTR library used - <a href="https://github.com/arlolra/otr" target="_blank">https://github.com/arlolra/otr</a><br />
 Rabbit(stream cipher) library used - <a href="https://code.google.com/p/crypto-js/#Rabbit" target="_blank">https://code.google.com/p/crypto-js/#Rabbit</a><br />
 <br />
@@ -115,7 +118,7 @@ Questions?<br />
 				<a href="white_paper.html" target="_blank">Implementation details can be found here</a>.<br />
 				<br />
 				<b>Notice</b><br />
-				You may not use this website for anything illegal or to share any material you do not have permission to share. While we have made every effort to garuntee the security of this site, the cryptographic implementation has not been independently verified, tested or audited. This website and it's owners do not assume any liability for use of this site. <br />
+				You may not use this website for anything illegal or to share any material you do not have permission to share. While we have made every effort to guarantee the security of this site, the cryptographic implementation has not been independently verified, tested or audited. This website and it's owners do not assume any liability for use of this site. <br />
 				<br />
 				<b>Privacy</b><br />
 				We do not save <i>any</i> file or chat information, nor do we have the ability to.<br />
