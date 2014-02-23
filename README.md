@@ -1,10 +1,13 @@
 ## webRTCCopy - https://www.rtccopy.com
 Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/filesharing website.
-Tested & working in Chrome Canary & Firefox nightly.
+Tested & working in Chrome, Firefox & Opera.
 
 ### WebRTC Connection Note
-This website does require a reliable WebRTC connection, which can only be supported in Chrome & Firefox. There is a bug that is preventing this from working in anything before Chrome Canary currently.
-Communication between Firefox and Chrome is not supported yet, but that is suppose to land before Chrome 31 becomes the stable branch (the only fix that would have to be done on this site would be to set the chunk sizes in file-io.js to be the same for both browsers).
+This website does require a reliable WebRTC connection, which can only be supported in Chrome, Firefox & Opera.
+
+Communication between Chrome & Opera is working.
+
+Communication between Firefox and Chrome/Opera is not supported yet, but is working between Chrome Canary & Firefox Nightly (file transfer might not work, the only fix that would have to be done on this site would be to set the chunk sizes in file-io.js to be the same for both browsers).
 
 ### File IO note
 At no point is data stored in the browsers memory. This code will write and read directly from disk, except Firefox which cannot write directly to disk.
@@ -35,7 +38,7 @@ That's it!
 
 
 ### LICENSE 
-Copyright (C) 2013 [Samuel Erb] (http://erbbysam.com)
+Copyright (C) 2013-2014 [Samuel Erb] (http://erbbysam.com)
 
     webRTCCopy is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
