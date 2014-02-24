@@ -1,22 +1,37 @@
-## webRTCCopy - https://www.rtccopy.com
-Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/filesharing website.
+## webRTCCopy
+
+https://www.rtccopy.com
+
+https://chrome.google.com/webstore/detail/webrtc-copy/fhafbipndpjocogeohkfbmnoiokloged
+
+Using the library https://raw.github.com/erbbysam/webRTC-data.io to create a IM/filesharing website & chrome app.
 Tested & working in Chrome, Firefox & Opera.
 
 ### WebRTC Connection Note
-This website does require a reliable WebRTC connection, which can only be supported in Chrome, Firefox & Opera.
+This website does require a reliable WebRTC connection, which is only supported in Chrome, Firefox & Opera.
 
 Communication between Chrome & Opera is working.
 
-Communication between Firefox and Chrome/Opera is not supported yet, but is working between Chrome Canary & Firefox Nightly (file transfer might not work, the only fix that would have to be done on this site would be to set the chunk sizes in file-io.js to be the same for both browsers).
+Communication between Firefox and Chrome/Opera is working.
 
 ### File IO note
 At no point is data stored in the browsers memory. This code will write and read directly from disk, except Firefox which cannot write directly to disk.
 This is because we must use [idb.filesystem.js] (https://github.com/ebidel/idb.filesystem.js) to mimic the HTML5 FileSystem API for Firefox. It's one limitation is that we cannot provide the user with a file link directly from this (like we can with Chrome). So we must instead write to it, then grab the file as a blob and place it into JS memory so the user can then download it to their local file system.
 
 ### WebRTC datachannel note
-Each chunk of a file is requested by the receiving end (a file is divided into many chunks), only after the previous chunk has been received. This is done this way because, when multiple packets are sent over the WebRTC datachannel, the browsers seem to start rejecting packets blindly (based on # of packets, not size). Also, Chrome Canary will reject packets passed a certain size and Firefox will hang (for a few seconds) when a packet to large is specified, hence the limited chunk sizes.
+Each chunk of a file is requested by the receiving end (a file is divided into many chunks), only after the previous chunk has been received (each chunk is sent over in smaller peices). This is done this way because, there is no way easily send large amounts of data without first deviding it up further, see:
+
+https://code.google.com/p/webrtc/issues/detail?id=2270#c35
+
+https://code.google.com/p/webrtc/issues/detail?id=2279#c18
+
+http://tools.ietf.org/html/draft-ietf-rtcweb-data-channel-07#section-6.6
 
 ### Additional crypto/OTR information
+OTR has been disabled on rtccopy.com. It is not safe to trust a 3rd party server to deliever cryptographic code. In order to use this feature, please either host the client portion of the site yourself or download the chrome app here - https://chrome.google.com/webstore/detail/webrtc-copy/fhafbipndpjocogeohkfbmnoiokloged
+
+For details on the implementation see:
+
 https://rtccopy.com/white_paper.html
 
 ### Install
